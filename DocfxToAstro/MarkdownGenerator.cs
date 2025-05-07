@@ -398,7 +398,7 @@ internal sealed class MarkdownGenerator
 		WriteMethods(type.Methods, ref sb, cancellationToken);
 	}
 
-	private void AppendEvents(in TypeDocumentation type, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
+	private static void AppendEvents(in TypeDocumentation type, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 
@@ -437,7 +437,7 @@ internal sealed class MarkdownGenerator
 			{
 				sb.AppendLine("#### Event Type");
 				sb.AppendLine();
-				sb.Append(evt.Returns.Value.Type);
+				AppendTypeWithLink(evt.Returns.Value.Type.Name, evt.Returns.Value.Type.Link, ref sb);
 				sb.AppendLine();
 			}
 		}
