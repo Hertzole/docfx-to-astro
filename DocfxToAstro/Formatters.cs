@@ -15,6 +15,9 @@ internal static partial class Formatters
 	[GeneratedRegex("<code\\s?(?:class=\".*?\")?>(.*?)</code>", RegexOptions.CultureInvariant)]
 	private static partial Regex CodeOpenTagRegex();
 
+	[GeneratedRegex(@"\S(\s{0,1}\n\s*)\S", RegexOptions.CultureInvariant)]
+	private static partial Regex InvalidNewLineRegex();
+
 	public static string FormatSummary(string? summary, ReferenceCollection references)
 	{
 		if (string.IsNullOrWhiteSpace(summary))
@@ -32,8 +35,13 @@ internal static partial class Formatters
 			sb.Replace(match.Groups[0].ValueSpan, $"`{match.Groups[1].Value}`");
 		}
 		
+		var newLineMatches = InvalidNewLineRegex().Matches(summary);
+		foreach (Match match in newLineMatches)
+		{
+			sb.Replace(match.Groups[1].ValueSpan, " ");
+		}
+		
 		sb.Replace("%60", "`");
-		sb.Replace(Environment.NewLine, string.Empty);
 
 		MatchCollection matches = SummaryReferenceRegex().Matches(sb.ToString());
 		foreach (Match match in matches)
