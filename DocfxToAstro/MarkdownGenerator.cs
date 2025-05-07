@@ -27,20 +27,67 @@ internal sealed class MarkdownGenerator
 			Directory.CreateDirectory(baseOutputFolder);
 		}
 
-		using (Utf16ValueStringBuilder indexBuilder = ZString.CreateStringBuilder(true))
+		Utf16ValueStringBuilder indexBuilder = ZString.CreateStringBuilder(true);
+
+		try
 		{
 			indexBuilder.AppendLine("---");
 			indexBuilder.AppendLine("title: API Reference");
 			indexBuilder.AppendLine("sidebar:");
 			indexBuilder.AppendLine("  hidden: true");
-			indexBuilder.Append("---");
+			indexBuilder.AppendLine("---");
+			indexBuilder.AppendLine();
+
+			ImmutableArray<AssemblyDocumentation> assembliesSorted = assemblies.Sort(static (x, y) => string.Compare(x.Name, y.Name, StringComparison.Ordinal));
+
+			for (int i = 0; i < assembliesSorted.Length; i++)
+			{
+				AssemblyDocumentation assembly = assembliesSorted.ItemRef(i);
+
+				indexBuilder.Append("## [");
+				indexBuilder.Append(assembly.Name);
+				indexBuilder.Append("](./");
+				indexBuilder.Append(assembly.Name.ToLowerInvariant());
+				indexBuilder.AppendLine("/)");
+				indexBuilder.AppendLine();
+
+				int classCount = assembly.Types.Count(static x => x.Type == ItemType.Class);
+				int structCount = assembly.Types.Count(static x => x.Type == ItemType.Struct);
+				int interfaceCount = assembly.Types.Count(static x => x.Type == ItemType.Interface);
+				int enumCount = assembly.Types.Count(static x => x.Type == ItemType.Enum);
+				int delegateCount = assembly.Types.Count(static x => x.Type == ItemType.Delegate);
+
+				WriteCount("Classes", classCount, ref indexBuilder);
+				WriteCount("Structs", structCount, ref indexBuilder);
+				WriteCount("Interfaces", interfaceCount, ref indexBuilder);
+				WriteCount("Enums", enumCount, ref indexBuilder);
+				WriteCount("Delegates", delegateCount, ref indexBuilder);
+				indexBuilder.AppendLine();
+			}
 
 			indexBuilder.WriteToFile(Path.Combine(baseOutputFolder, "index.md"));
+		}
+		finally
+		{
+			indexBuilder.Dispose();
 		}
 
 		for (int i = 0; i < assemblies.Length; i++)
 		{
 			GenerateAssemblyMarkdown(in assemblies.ItemRef(i), baseOutputFolder, in cancellationToken);
+		}
+
+		static void WriteCount(string name, int count, ref Utf16ValueStringBuilder sb)
+		{
+			if (count == 0)
+			{
+				return;
+			}
+
+			sb.Append("- **");
+			sb.Append(name);
+			sb.Append("**: ");
+			sb.AppendLine(count);
 		}
 	}
 
