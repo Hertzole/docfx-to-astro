@@ -374,7 +374,8 @@ internal sealed partial class MarkdownGenerator
 			cancellationToken.ThrowIfCancellationRequested();
 
 			TypeDocumentation field = type.Fields[i];
-			sb.AppendLine($"### {field.Name}");
+			sb.Append("### ");
+			sb.AppendLine(field.Name);
 			sb.AppendLine();
 
 			AppendObsoleteWarning(in field, ref sb, in cancellationToken);
@@ -415,7 +416,8 @@ internal sealed partial class MarkdownGenerator
 			cancellationToken.ThrowIfCancellationRequested();
 
 			TypeDocumentation property = type.Properties[i];
-			sb.AppendLine($"### {property.Name}");
+			sb.Append("### ");
+			sb.AppendLine(property.Name);
 			sb.AppendLine();
 
 			AppendObsoleteWarning(in property, ref sb, in cancellationToken);
@@ -521,7 +523,8 @@ internal sealed partial class MarkdownGenerator
 			cancellationToken.ThrowIfCancellationRequested();
 
 			TypeDocumentation method = methods[i];
-			sb.AppendLine($"### {method.Name}");
+			sb.Append("### ");
+			sb.AppendLine(method.Name);
 			sb.AppendLine();
 
 			AppendObsoleteWarning(in method, ref sb, in cancellationToken);
