@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.Marshalling;
 using System.Threading;
 using Cysharp.Text;
 using DocfxToAstro.Models;
@@ -24,7 +23,6 @@ internal sealed class MarkdownGenerator
 		string baseOutputFolder,
 		CancellationToken cancellationToken = default)
 	{
-
 		if (!Directory.Exists(baseOutputFolder))
 		{
 			Directory.CreateDirectory(baseOutputFolder);
@@ -38,7 +36,7 @@ internal sealed class MarkdownGenerator
 			indexBuilder.AppendLine("  hidden: true");
 			indexBuilder.Append("---");
 
-			File.WriteAllText(Path.Combine(baseOutputFolder, "index.md"), indexBuilder.AsSpan());
+			indexBuilder.WriteToFile(Path.Combine(baseOutputFolder, "index.md"));
 		}
 
 		for (int i = 0; i < assemblies.Length; i++)
@@ -50,7 +48,7 @@ internal sealed class MarkdownGenerator
 	private void GenerateAssemblyMarkdown(in AssemblyDocumentation assembly, string baseOutputFolder, in CancellationToken cancellationToken)
 	{
 		string outputFolder = Path.Combine(baseOutputFolder, assembly.Name);
-		
+
 		logger.WriteDebug($"Generating markdown for assembly: {assembly.Name} to {outputFolder}");
 
 		if (!Directory.Exists(outputFolder))
@@ -83,18 +81,18 @@ internal sealed class MarkdownGenerator
 			indexBuilder.AppendLine("---");
 
 			List<TypeDocumentation> classes = assembly.Types.Where(static x => x.Type == ItemType.Class).ToList();
-			var structs = assembly.Types.Where(static x => x.Type == ItemType.Struct).ToList();
-			var interfaces = assembly.Types.Where(static x => x.Type == ItemType.Interface).ToList();
-			var enums = assembly.Types.Where(static x => x.Type == ItemType.Enum).ToList();
-			var delegates = assembly.Types.Where(static x => x.Type == ItemType.Delegate).ToList();
+			List<TypeDocumentation> structs = assembly.Types.Where(static x => x.Type == ItemType.Struct).ToList();
+			List<TypeDocumentation> interfaces = assembly.Types.Where(static x => x.Type == ItemType.Interface).ToList();
+			List<TypeDocumentation> enums = assembly.Types.Where(static x => x.Type == ItemType.Enum).ToList();
+			List<TypeDocumentation> delegates = assembly.Types.Where(static x => x.Type == ItemType.Delegate).ToList();
 
 			Write("Classes", classes, ref indexBuilder, in cancellationToken);
 			Write("Structs", structs, ref indexBuilder, in cancellationToken);
 			Write("Interfaces", interfaces, ref indexBuilder, in cancellationToken);
 			Write("Enums", enums, ref indexBuilder, in cancellationToken);
 			Write("Delegates", delegates, ref indexBuilder, in cancellationToken);
-			
-			File.WriteAllText(Path.Combine(outputFolder, "index.md"), indexBuilder.AsSpan());
+
+			indexBuilder.WriteToFile(Path.Combine(outputFolder, "index.md"));
 		}
 		finally
 		{
@@ -108,7 +106,7 @@ internal sealed class MarkdownGenerator
 				return;
 			}
 
-			using var nameBuilder = ZString.CreateStringBuilder();
+			using Utf16ValueStringBuilder nameBuilder = ZString.CreateStringBuilder();
 
 			types.Sort(Comparison);
 
@@ -122,7 +120,7 @@ internal sealed class MarkdownGenerator
 			{
 				cancellationToken.ThrowIfCancellationRequested();
 				nameBuilder.Clear();
-				
+
 				TypeDocumentation type = types[i];
 
 				nameBuilder.Append(type.Name);
@@ -141,7 +139,7 @@ internal sealed class MarkdownGenerator
 
 					nameBuilder.Append("\\>");
 				}
-				
+
 				sb.Append("| ");
 				AppendTypeWithLink(nameBuilder.AsSpan(), type.Link, ref sb);
 				sb.Append(" | ");
@@ -149,7 +147,7 @@ internal sealed class MarkdownGenerator
 				sb.AppendLine(" |");
 			}
 		}
-		
+
 		static int Comparison(TypeDocumentation x, TypeDocumentation y)
 		{
 			return string.Compare(x.Name, y.Name, StringComparison.Ordinal);
@@ -170,7 +168,7 @@ internal sealed class MarkdownGenerator
 			AppendMethods(in type, ref sb, in cancellationToken);
 			AppendEvents(in type, ref sb, in cancellationToken);
 
-			File.WriteAllText(Path.Combine(baseOutputFolder, ZString.Concat(type.FullName, ".md")), sb.AsSpan().Trim());
+			sb.WriteToFile(Path.Combine(baseOutputFolder, ZString.Concat(type.FullName, ".md")));
 		}
 		finally
 		{
@@ -204,7 +202,7 @@ internal sealed class MarkdownGenerator
 				sb.AppendLine(" Delegate");
 				break;
 		}
-		
+
 		sb.Append("slug: reference/");
 		sb.AppendLine(root.Link.ToString(string.Empty));
 		sb.AppendLine("sidebar:");
@@ -233,6 +231,7 @@ internal sealed class MarkdownGenerator
 			sb.AppendLine("```csharp title=\"C#\"");
 			sb.AppendLine(type.Syntax);
 			sb.AppendLine("```");
+			sb.AppendLine();
 		}
 
 		if (type.TypeParameters.Length > 0)
@@ -254,7 +253,6 @@ internal sealed class MarkdownGenerator
 
 		if (type.Inheritance.Length > 0)
 		{
-			sb.AppendLine();
 			sb.Append("Inheritance ");
 			for (int i = 0; i < type.Inheritance.Length; i++)
 			{
@@ -285,7 +283,7 @@ internal sealed class MarkdownGenerator
 		}
 
 		WriteRemarks(in type, ref sb, in cancellationToken);
-		
+
 		sb.AppendLine();
 	}
 
@@ -297,18 +295,18 @@ internal sealed class MarkdownGenerator
 		{
 			return;
 		}
-		
+
 		sb.AppendLine("## Fields");
 		sb.AppendLine();
-		
+
 		for (int i = 0; i < type.Fields.Count; i++)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
-			
+
 			TypeDocumentation field = type.Fields[i];
 			sb.AppendLine($"### {field.Name}");
 			sb.AppendLine();
-			
+
 			AppendObsoleteWarning(in field, ref sb, in cancellationToken);
 
 			if (!string.IsNullOrWhiteSpace(field.Summary))
@@ -323,13 +321,13 @@ internal sealed class MarkdownGenerator
 				sb.AppendLine(field.Syntax);
 				sb.AppendLine("```");
 			}
-			
+
 			WriteRemarks(in field, ref sb, in cancellationToken);
-			
+
 			sb.AppendLine();
 		}
 	}
-	
+
 	private void AppendProperties(in TypeDocumentation type, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
@@ -338,14 +336,14 @@ internal sealed class MarkdownGenerator
 		{
 			return;
 		}
-		
+
 		sb.AppendLine("## Properties");
 		sb.AppendLine();
-		
+
 		for (int i = 0; i < type.Properties.Count; i++)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
-			
+
 			TypeDocumentation property = type.Properties[i];
 			sb.AppendLine($"### {property.Name}");
 			sb.AppendLine();
@@ -364,9 +362,9 @@ internal sealed class MarkdownGenerator
 				sb.AppendLine(property.Syntax);
 				sb.AppendLine("```");
 			}
-			
+
 			WriteRemarks(in property, ref sb, in cancellationToken);
-			
+
 			sb.AppendLine();
 		}
 	}
@@ -379,13 +377,13 @@ internal sealed class MarkdownGenerator
 		{
 			return;
 		}
-		
+
 		sb.AppendLine("## Constructors");
 		sb.AppendLine();
-		
+
 		WriteMethods(type.Constructors, ref sb, cancellationToken);
 	}
-	
+
 	private void AppendMethods(in TypeDocumentation type, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
@@ -394,7 +392,7 @@ internal sealed class MarkdownGenerator
 		{
 			return;
 		}
-		
+
 		sb.AppendLine("## Methods");
 		sb.AppendLine();
 
@@ -415,19 +413,19 @@ internal sealed class MarkdownGenerator
 
 		for (int i = 0; i < type.Events.Count; i++)
 		{
-			var evt = type.Events[i];
+			TypeDocumentation evt = type.Events[i];
 			sb.Append("### ");
 			sb.AppendLine(evt.Name);
 			sb.AppendLine();
-			
+
 			AppendObsoleteWarning(in evt, ref sb, in cancellationToken);
-			
+
 			if (!string.IsNullOrWhiteSpace(evt.Summary))
 			{
 				sb.AppendLine(evt.Summary.Trim());
 				sb.AppendLine();
 			}
-			
+
 			if (!string.IsNullOrEmpty(evt.Syntax))
 			{
 				sb.AppendLine("```csharp title=\"C#\"");
@@ -451,7 +449,7 @@ internal sealed class MarkdownGenerator
 		for (int i = 0; i < methods.Count; i++)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
-			
+
 			TypeDocumentation method = methods[i];
 			sb.AppendLine($"### {method.Name}");
 			sb.AppendLine();
@@ -476,23 +474,23 @@ internal sealed class MarkdownGenerator
 			if (method.Returns.HasValue)
 			{
 				sb.AppendLine("#### Returns");
-				
+
 				cancellationToken.ThrowIfCancellationRequested();
-				
+
 				Return returns = method.Returns.Value;
 				sb.AppendLine($"{returns.Type}  ");
 				if (!string.IsNullOrEmpty(returns.Description))
 				{
 					sb.AppendLine(returns.Description);
 				}
-				
+
 				sb.AppendLine();
 			}
 
 			WriteExceptions(in method, ref sb, in cancellationToken);
 
 			WriteRemarks(in method, ref sb, in cancellationToken, "####");
-			
+
 			sb.AppendLine();
 		}
 	}
@@ -503,15 +501,15 @@ internal sealed class MarkdownGenerator
 		{
 			return;
 		}
-		
+
 		sb.AppendLine("#### Parameters");
 
 		for (int j = 0; j < method.Parameters.Length; j++)
-		{ 
+		{
 			cancellationToken.ThrowIfCancellationRequested();
-					
+
 			Parameter parameter = method.Parameters[j];
-					
+
 			sb.AppendLine($"`{parameter.Id}` {parameter.Type}  ");
 			if (!string.IsNullOrEmpty(parameter.Description))
 			{
@@ -536,7 +534,7 @@ internal sealed class MarkdownGenerator
 		sb.AppendLine();
 		sb.AppendLine(type.Remarks);
 	}
-	
+
 	private static void WriteExceptions(in TypeDocumentation type, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
@@ -552,14 +550,15 @@ internal sealed class MarkdownGenerator
 		for (int i = 0; i < type.Exceptions.Length; i++)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
-			
-			var exception = type.Exceptions[i];
+
+			ExceptionDocumentation exception = type.Exceptions[i];
 			AppendTypeWithLink(exception.Type, exception.Link, ref sb);
 			sb.AppendLine("  ");
 			if (!string.IsNullOrWhiteSpace(exception.Description))
 			{
 				sb.AppendLine(exception.Description);
 			}
+
 			sb.AppendLine();
 		}
 	}
@@ -567,8 +566,8 @@ internal sealed class MarkdownGenerator
 	private static void AppendObsoleteWarning(in TypeDocumentation type, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
-		
-		if (type.TryGetObsolete(out var obsoleteReason, out var isObsoleteError))
+
+		if (type.TryGetObsolete(out string? obsoleteReason, out bool isObsoleteError))
 		{
 			sb.Append(":::");
 			sb.Append(isObsoleteError ? "danger" : "caution");
@@ -580,12 +579,14 @@ internal sealed class MarkdownGenerator
 				{
 					sb.Append(" and should not be used");
 				}
+
 				sb.AppendLine(".");
 			}
 			else
 			{
 				sb.AppendLine(obsoleteReason);
 			}
+
 			sb.AppendLine(":::");
 		}
 	}
@@ -601,13 +602,14 @@ internal sealed class MarkdownGenerator
 		{
 			sb.Append('`');
 		}
+
 		sb.Append(type);
 
 		if (writeInCode)
 		{
 			sb.Append('`');
 		}
-		
+
 		if (link != Link.Empty)
 		{
 			sb.Append(']');

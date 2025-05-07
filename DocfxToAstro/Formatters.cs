@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Cysharp.Text;
 using DocfxToAstro.Helpers;
@@ -27,20 +26,20 @@ internal static partial class Formatters
 
 		using Utf16ValueStringBuilder sb = ZString.CreateStringBuilder();
 		sb.Append(summary);
-		
-		var firstMatches = CodeOpenTagRegex().Matches(summary);
+
+		MatchCollection firstMatches = CodeOpenTagRegex().Matches(summary);
 		foreach (Match match in firstMatches)
 		{
 			summary = summary.Replace(match.Groups[0].Value, $"`{match.Groups[1].Value}`");
 			sb.Replace(match.Groups[0].ValueSpan, $"`{match.Groups[1].Value}`");
 		}
-		
-		var newLineMatches = InvalidNewLineRegex().Matches(summary);
+
+		MatchCollection newLineMatches = InvalidNewLineRegex().Matches(summary);
 		foreach (Match match in newLineMatches)
 		{
 			sb.Replace(match.Groups[1].ValueSpan, " ");
 		}
-		
+
 		sb.Replace("%60", "`");
 
 		MatchCollection matches = SummaryReferenceRegex().Matches(sb.ToString());
@@ -90,7 +89,7 @@ internal static partial class Formatters
 
 	public static ReadOnlySpan<char> FormatType(ReadOnlySpan<char> value)
 	{
-		if(value.StartsWith('{') && value.EndsWith('}'))
+		if (value.StartsWith('{') && value.EndsWith('}'))
 		{
 			return value.Slice(1, value.Length - 2);
 		}
