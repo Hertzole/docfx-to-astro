@@ -556,7 +556,7 @@ internal sealed class MarkdownGenerator
 			cancellationToken.ThrowIfCancellationRequested();
 
 			ExceptionDocumentation exception = type.Exceptions[i];
-			AppendTypeWithLink(exception.Type, exception.Link, ref sb);
+			AppendTypeWithLink(exception.Type.Name, exception.Type.Link, ref sb);
 			sb.AppendLine("  ");
 			if (!string.IsNullOrWhiteSpace(exception.Description))
 			{

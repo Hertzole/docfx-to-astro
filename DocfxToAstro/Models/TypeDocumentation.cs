@@ -229,7 +229,7 @@ public sealed class TypeDocumentation
 				name = reference.Name;
 			}
 
-			result[i] = new ExceptionDocumentation(name, link, Formatters.FormatSummary(exception.Description, references));
+			result[i] = new ExceptionDocumentation(new TypeReferenceDocumentation(name, link), Formatters.FormatSummary(exception.Description, references));
 		}
 
 		return result;
