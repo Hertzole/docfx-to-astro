@@ -3,11 +3,11 @@ using VYaml.Annotations;
 namespace DocfxToAstro.Models.Yaml;
 
 [YamlObject]
-public partial struct Parameter
+public readonly partial record struct Parameter
 {
-	public string Id { get; set; }
-	public string Type { get; set; }
-	public string Description { get; set; }
+	public string Id { get; }
+	public string Type { get; }
+	public string Description { get; }
 
 	public Parameter(string id, string type, string description)
 	{

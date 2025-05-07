@@ -25,7 +25,7 @@ public sealed class TypeDocumentation
 
 	public TypeReferenceDocumentation[] Inheritance { get; }
 	public TypeReferenceDocumentation[] Implements { get; }
-	public Parameter[] Parameters { get; }
+	public ParameterDocumentation[] Parameters { get; }
 	public Return? Returns { get; }
 	public TypeParameter[] TypeParameters { get; }
 	public ExceptionDocumentation[] Exceptions { get; }
@@ -121,11 +121,9 @@ public sealed class TypeDocumentation
 	{
 		if (original != null && original.Length > 0)
 		{
-			using Utf16ValueStringBuilder inheritanceBuilder = ZString.CreateStringBuilder(true);
 			TypeReferenceDocumentation[] result = new TypeReferenceDocumentation[original.Length];
 			for (int i = 0; i < original.Length; i++)
 			{
-				inheritanceBuilder.Clear();
 				string name = original[i];
 				Link link = Link.Empty;
 
@@ -144,38 +142,29 @@ public sealed class TypeDocumentation
 		return Array.Empty<TypeReferenceDocumentation>();
 	}
 
-	private static Parameter[] GetParameters(in Item item, ReferenceCollection references)
+	private static ParameterDocumentation[] GetParameters(in Item item, ReferenceCollection references)
 	{
 		if (item.Syntax == null || item.Syntax.Parameters == null || item.Syntax.Parameters.Length == 0)
 		{
-			return Array.Empty<Parameter>();
+			return Array.Empty<ParameterDocumentation>();
 		}
 
-		Parameter[] result = new Parameter[item.Syntax.Parameters.Length];
+		ParameterDocumentation[] result = new ParameterDocumentation[item.Syntax.Parameters.Length];
 		for (int i = 0; i < item.Syntax.Parameters.Length; i++)
 		{
 			Parameter parameter = item.Syntax.Parameters[i];
-			string type;
+			TypeReferenceDocumentation type;
 
 			if (references.TryGetReferenceWithLink(parameter.Type, out Reference reference))
 			{
-				string name = reference.Name;
-				ReadOnlySpan<char> href = Formatters.FormatHref(reference.Href, out bool isExternalLink);
-				if (!isExternalLink)
-				{
-					type = ZString.Format("[{0}](../{1})", Formatters.FormatType(name).ToString(), href.ToString().ToLowerInvariant());
-				}
-				else
-				{
-					type = ZString.Format("[{0}]({1})", Formatters.FormatType(name).ToString(), href.ToString().ToLowerInvariant());
-				}
+				type = new TypeReferenceDocumentation(reference.Name, Link.FromReference(reference));
 			}
 			else
 			{
-				type = Formatters.FormatType(parameter.Type).ToString();
+				type = new TypeReferenceDocumentation(parameter.Type, Link.Empty);
 			}
 
-			result[i] = new Parameter(parameter.Id, type, Formatters.FormatSummary(parameter.Description, references));
+			result[i] = new ParameterDocumentation(parameter.Id, type, parameter.Description);
 		}
 
 		return result;

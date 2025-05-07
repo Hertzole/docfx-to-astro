@@ -508,12 +508,15 @@ internal sealed class MarkdownGenerator
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 
-			Parameter parameter = method.Parameters[j];
+			ParameterDocumentation parameter = method.Parameters[j];
 
-			sb.AppendLine($"`{parameter.Id}` {parameter.Type}  ");
-			if (!string.IsNullOrEmpty(parameter.Description))
+			sb.Append('`');
+			sb.Append(parameter.Name);
+			sb.AppendLine("`  ");
+			AppendTypeWithLink(parameter.Type.Name, parameter.Type.Link, ref sb);
+			if (!string.IsNullOrEmpty(parameter.Summary))
 			{
-				sb.AppendLine(parameter.Description);
+				sb.AppendLine(parameter.Summary);
 			}
 
 			sb.AppendLine();

@@ -57,7 +57,7 @@ internal static partial class Formatters
 			if (references.TryGetReferenceWithLink(uid, out Reference reference))
 			{
 				ReadOnlySpan<char> href = FormatHref(reference.Href, out bool isExternalLink);
-				sb.Replace(match.Groups[0].ValueSpan, $"[{reference.Name}]({(isExternalLink ? string.Empty : "../")}{href.ToString().ToLowerInvariant()})");
+				sb.Replace(match.Groups[0].ValueSpan, $"[{reference.Name}]({(isExternalLink ? string.Empty : "../")}{href.ToString().ToLowerInvariant()}/)");
 			}
 			else
 			{
