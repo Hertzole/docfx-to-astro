@@ -89,11 +89,22 @@ internal static partial class Formatters
 
 	public static ReadOnlySpan<char> FormatType(ReadOnlySpan<char> value)
 	{
-		if (value.StartsWith('{') && value.EndsWith('}'))
+		// Only run this if the value contains any of the characters
+		if (!value.ContainsAny('{', '}'))
 		{
-			return value.Slice(1, value.Length - 2);
+			return value;
 		}
 
-		return value;
+		using Utf16ValueStringBuilder sb = ZString.CreateStringBuilder();
+		sb.Append(value);
+
+		// Replaces types like List{{T}} with List<T>
+		sb.Replace("{{", "\\<");
+		sb.Replace("}}", "\\>");
+		// Replaces types like {T}[] with T[]
+		sb.Replace("{", string.Empty);
+		sb.Replace("}", string.Empty);
+
+		return sb.AsSpan();
 	}
 }
