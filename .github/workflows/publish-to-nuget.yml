@@ -38,4 +38,4 @@ jobs:
 
     - name: Publish to NuGet
       if: steps.semantic.outputs.new_release_published == 'true'
-      run: dotnet nuget push tool_output/*.nupkg --skip-duplicate --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+      run: dotnet nuget push tool_output/*.nupkg --skip-duplicate --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json -p:AssemblyVersion=${{ steps.semantic.outputs.new_release_version }} -p:Version=${{ steps.semantic.outputs.new_release_version }}
