@@ -17,6 +17,9 @@ internal static partial class Formatters
 	[GeneratedRegex(@"\S(\s{0,1}\n\s*)\S", RegexOptions.CultureInvariant)]
 	private static partial Regex InvalidNewLineRegex();
 
+	[GeneratedRegex(@"(.*?)(?:\.html)?#(.*)_{1}(.*)", RegexOptions.CultureInvariant)]
+	private static partial Regex HeaderLinkRegex();
+
 	public static string FormatSummary(string? summary, ReferenceCollection references)
 	{
 		if (string.IsNullOrWhiteSpace(summary))
@@ -82,6 +85,17 @@ internal static partial class Formatters
 		}
 
 		sb.Replace('`', '-');
+
+		MatchCollection headerLinkMatches = HeaderLinkRegex().Matches(sb.ToString());
+		if (headerLinkMatches.Count == 1)
+		{
+			Match match = headerLinkMatches[0];
+
+			sb.Clear();
+			sb.Append(match.Groups[1].Value);
+			sb.Append("/#");
+			sb.Append(match.Groups[3].Value);
+		}
 
 		isExternalLink = false;
 		return sb.AsSpan();
