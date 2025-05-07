@@ -6,7 +6,6 @@ using System.Linq;
 using System.Threading;
 using Cysharp.Text;
 using DocfxToAstro.Models;
-using DocfxToAstro.Models.Yaml;
 
 namespace DocfxToAstro;
 
@@ -513,10 +512,11 @@ internal sealed class MarkdownGenerator
 
 			sb.Append('`');
 			sb.Append(parameter.Name);
-			sb.AppendLine("`  ");
+			sb.Append("` ");
 			AppendTypeWithLink(parameter.Type.Name, parameter.Type.Link, ref sb);
 			if (!string.IsNullOrEmpty(parameter.Summary))
 			{
+				sb.AppendLine("  ");
 				sb.AppendLine(parameter.Summary);
 			}
 
