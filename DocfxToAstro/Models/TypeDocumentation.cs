@@ -86,6 +86,7 @@ public sealed class TypeDocumentation
 	{
 		for (int i = 0; i < items.Count; i++)
 		{
+			// Skip if the item is not a child of this type
 			if (items[i].Parent != uid)
 			{
 				continue;
@@ -103,14 +104,17 @@ public sealed class TypeDocumentation
 					break;
 				case ItemType.Method:
 					methods.Add(child);
+					// Methods can have children, like return and parameters
 					child.FindChildren(items, references);
 					break;
 				case ItemType.Constructor:
 					constructors.Add(child);
+					// Constructors can have children, parameters
 					child.FindChildren(items, references);
 					break;
 				case ItemType.Event:
 					events.Add(child);
+					// Events can have children, like event type
 					child.FindChildren(items, references);
 					break;
 			}
@@ -153,16 +157,16 @@ public sealed class TypeDocumentation
 		for (int i = 0; i < item.Syntax.Parameters.Length; i++)
 		{
 			Parameter parameter = item.Syntax.Parameters[i];
-			TypeReferenceDocumentation type;
+			string name = parameter.Type;
+			Link link = Link.Empty;
 
 			if (references.TryGetReferenceWithLink(parameter.Type, out Reference reference))
 			{
-				type = new TypeReferenceDocumentation(reference.Name, Link.FromReference(reference));
+				name = reference.Name;
+				link = Link.FromReference(reference);
 			}
-			else
-			{
-				type = new TypeReferenceDocumentation(parameter.Type, Link.Empty);
-			}
+
+			TypeReferenceDocumentation type = new TypeReferenceDocumentation(name, link);
 
 			result[i] = new ParameterDocumentation(parameter.Id, type, parameter.Description);
 		}
@@ -178,16 +182,16 @@ public sealed class TypeDocumentation
 		}
 
 		Return returns = item.Syntax.Returns.Value;
-		TypeReferenceDocumentation type;
+		string name = returns.Type;
+		Link link = Link.Empty;
 
 		if (references.TryGetReferenceWithLink(returns.Type, out Reference reference))
 		{
-			type = new TypeReferenceDocumentation(reference.Name, Link.FromReference(reference));
+			name = reference.Name;
+			link = Link.FromReference(reference);
 		}
-		else
-		{
-			type = new TypeReferenceDocumentation(returns.Type, Link.Empty);
-		}
+
+		TypeReferenceDocumentation type = new TypeReferenceDocumentation(name, link);
 
 		return new ReturnDocumentation(type, Formatters.FormatSummary(item.Syntax.Returns.Value.Description, references));
 	}
