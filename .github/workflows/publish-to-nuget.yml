@@ -14,15 +14,14 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: |
             8
             9
 
-    - name: Pack .NET Tool
-      run: |
-        dotnet pack DocfxToAstro/DocfxToAstro.csproj -c Release -o tool_output
+    - name: Build
+      run: dotnet build -c Release
 
     - name: Semantic Release
       id: semantic
@@ -36,6 +35,11 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Pack .NET Tool
+      run: |
+        dotnet clean
+        dotnet pack DocfxToAstro/DocfxToAstro.csproj -c Release -o tool_output -p:AssemblyVersion=${{ steps.semantic.outputs.new_release_version }} -p:Version=${{ steps.semantic.outputs.new_release_version }}
+
     - name: Publish to NuGet
       if: steps.semantic.outputs.new_release_published == 'true'
-      run: dotnet nuget push tool_output/*.nupkg --skip-duplicate --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json -p:AssemblyVersion=${{ steps.semantic.outputs.new_release_version }} -p:Version=${{ steps.semantic.outputs.new_release_version }}
+      run: dotnet nuget push tool_output/*.nupkg --skip-duplicate --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
