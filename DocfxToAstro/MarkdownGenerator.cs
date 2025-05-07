@@ -63,7 +63,7 @@ internal sealed class MarkdownGenerator
 		}
 	}
 
-	private void GenerateIndexForAssembly(in AssemblyDocumentation assembly, string outputFolder, in CancellationToken cancellationToken)
+	private static void GenerateIndexForAssembly(in AssemblyDocumentation assembly, string outputFolder, in CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 
@@ -153,7 +153,7 @@ internal sealed class MarkdownGenerator
 		}
 	}
 
-	private void GenerateTypeMarkdown(in TypeDocumentation type, string baseOutputFolder, in CancellationToken cancellationToken)
+	private static void GenerateTypeMarkdown(in TypeDocumentation type, string baseOutputFolder, in CancellationToken cancellationToken)
 	{
 		Utf16ValueStringBuilder sb = ZString.CreateStringBuilder();
 
@@ -175,7 +175,7 @@ internal sealed class MarkdownGenerator
 		}
 	}
 
-	private void AppendYamlHeader(in TypeDocumentation root, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
+	private static void AppendYamlHeader(in TypeDocumentation root, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 
@@ -210,7 +210,7 @@ internal sealed class MarkdownGenerator
 		sb.AppendLine("---");
 	}
 
-	private void AppendDefinition(in TypeDocumentation type, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
+	private static void AppendDefinition(in TypeDocumentation type, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 
@@ -286,7 +286,7 @@ internal sealed class MarkdownGenerator
 		sb.AppendLine();
 	}
 
-	private void AppendFields(in TypeDocumentation type, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
+	private static void AppendFields(in TypeDocumentation type, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 
@@ -327,7 +327,7 @@ internal sealed class MarkdownGenerator
 		}
 	}
 
-	private void AppendProperties(in TypeDocumentation type, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
+	private static void AppendProperties(in TypeDocumentation type, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 
@@ -368,7 +368,7 @@ internal sealed class MarkdownGenerator
 		}
 	}
 
-	private void AppendConstructors(in TypeDocumentation type, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
+	private static void AppendConstructors(in TypeDocumentation type, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 
@@ -383,7 +383,7 @@ internal sealed class MarkdownGenerator
 		WriteMethods(type.Constructors, ref sb, cancellationToken);
 	}
 
-	private void AppendMethods(in TypeDocumentation type, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
+	private static void AppendMethods(in TypeDocumentation type, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 
@@ -443,7 +443,7 @@ internal sealed class MarkdownGenerator
 		}
 	}
 
-	private void WriteMethods(IReadOnlyList<TypeDocumentation> methods, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
+	private static void WriteMethods(IReadOnlyList<TypeDocumentation> methods, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
 	{
 		for (int i = 0; i < methods.Count; i++)
 		{
@@ -466,6 +466,7 @@ internal sealed class MarkdownGenerator
 				sb.AppendLine("```csharp title=\"C#\"");
 				sb.AppendLine(method.Syntax);
 				sb.AppendLine("```");
+				sb.AppendLine();
 			}
 
 			WriteParameters(in method, ref sb, in cancellationToken);
@@ -473,15 +474,16 @@ internal sealed class MarkdownGenerator
 			if (method.Returns.HasValue)
 			{
 				sb.AppendLine("#### Returns");
+				sb.AppendLine();
 
 				cancellationToken.ThrowIfCancellationRequested();
 
 				ReturnDocumentation returns = method.Returns.Value;
 				AppendTypeWithLink(returns.Type.Name, returns.Type.Link, ref sb);
-				sb.AppendLine("  ");
 				if (!string.IsNullOrEmpty(returns.Summary))
 				{
-					sb.AppendLine(returns.Summary);
+					sb.AppendLine("  ");
+					sb.Append(returns.Summary);
 				}
 
 				sb.AppendLine();
@@ -503,6 +505,7 @@ internal sealed class MarkdownGenerator
 		}
 
 		sb.AppendLine("#### Parameters");
+		sb.AppendLine();
 
 		for (int j = 0; j < method.Parameters.Length; j++)
 		{
@@ -514,9 +517,9 @@ internal sealed class MarkdownGenerator
 			sb.Append(parameter.Name);
 			sb.Append("` ");
 			AppendTypeWithLink(parameter.Type.Name, parameter.Type.Link, ref sb);
+			sb.AppendLine("  ");
 			if (!string.IsNullOrEmpty(parameter.Summary))
 			{
-				sb.AppendLine("  ");
 				sb.AppendLine(parameter.Summary);
 			}
 
@@ -524,7 +527,7 @@ internal sealed class MarkdownGenerator
 		}
 	}
 
-	private void WriteRemarks(in TypeDocumentation type, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken, string header = "##")
+	private static void WriteRemarks(in TypeDocumentation type, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken, string header = "##")
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 
