@@ -6,14 +6,15 @@ using System.Linq;
 using System.Threading;
 using Cysharp.Text;
 using DocfxToAstro.Models;
+using Microsoft.Extensions.Logging;
 
 namespace DocfxToAstro;
 
-internal sealed class MarkdownGenerator
+internal sealed partial class MarkdownGenerator
 {
-	private readonly Logger logger;
+	private readonly ILogger logger;
 
-	public MarkdownGenerator(Logger logger)
+	public MarkdownGenerator(ILogger logger)
 	{
 		this.logger = logger;
 	}
@@ -66,6 +67,7 @@ internal sealed class MarkdownGenerator
 			}
 
 			indexBuilder.WriteToFile(Path.Combine(baseOutputFolder, "index.md"));
+			LogGeneratedGlobalIndex(logger);
 		}
 		finally
 		{
@@ -74,7 +76,7 @@ internal sealed class MarkdownGenerator
 
 		for (int i = 0; i < assemblies.Length; i++)
 		{
-			GenerateAssemblyMarkdown(in assemblies.ItemRef(i), baseOutputFolder, in cancellationToken);
+			GenerateAssemblyMarkdown(in assemblies.ItemRef(i), baseOutputFolder, in cancellationToken, in logger);
 		}
 
 		static void WriteCount(string name, int count, ref Utf16ValueStringBuilder sb)
@@ -91,26 +93,38 @@ internal sealed class MarkdownGenerator
 		}
 	}
 
-	private void GenerateAssemblyMarkdown(in AssemblyDocumentation assembly, string baseOutputFolder, in CancellationToken cancellationToken)
+	[LoggerMessage(LogLevel.Debug, "Generated global index", EventName = "GeneratedGlobalIndex")]
+	private static partial void LogGeneratedGlobalIndex(ILogger logger);
+
+	private static void GenerateAssemblyMarkdown(in AssemblyDocumentation assembly,
+		string baseOutputFolder,
+		in CancellationToken cancellationToken,
+		in ILogger logger)
 	{
 		string outputFolder = Path.Combine(baseOutputFolder, assembly.Name);
 
-		logger.WriteDebug($"Generating markdown for assembly: {assembly.Name} to {outputFolder}");
+		LogGeneratingAssemblyMarkdown(logger, assembly.Name, outputFolder);
 
 		if (!Directory.Exists(outputFolder))
 		{
 			Directory.CreateDirectory(outputFolder);
 		}
 
-		GenerateIndexForAssembly(in assembly, outputFolder, in cancellationToken);
+		GenerateIndexForAssembly(in assembly, outputFolder, in cancellationToken, in logger);
 
 		for (int i = 0; i < assembly.Types.Length; i++)
 		{
-			GenerateTypeMarkdown(in assembly.Types.ItemRef(i), outputFolder, in cancellationToken);
+			GenerateTypeMarkdown(in assembly.Types.ItemRef(i), outputFolder, in cancellationToken, in logger);
 		}
 	}
 
-	private static void GenerateIndexForAssembly(in AssemblyDocumentation assembly, string outputFolder, in CancellationToken cancellationToken)
+	[LoggerMessage(LogLevel.Debug, "Generating markdown for assembly '{assemblyName}' to '{outputFolder}'", EventName = "GeneratingAssemblyMarkdown")]
+	private static partial void LogGeneratingAssemblyMarkdown(ILogger logger, string assemblyName, string outputFolder);
+
+	private static void GenerateIndexForAssembly(in AssemblyDocumentation assembly,
+		string outputFolder,
+		in CancellationToken cancellationToken,
+		in ILogger logger)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 
@@ -139,6 +153,8 @@ internal sealed class MarkdownGenerator
 			Write("Delegates", delegates, ref indexBuilder, in cancellationToken);
 
 			indexBuilder.WriteToFile(Path.Combine(outputFolder, "index.md"));
+
+			LogGeneratedAssemblyIndex(logger, assembly.Name);
 		}
 		finally
 		{
@@ -200,7 +216,10 @@ internal sealed class MarkdownGenerator
 		}
 	}
 
-	private static void GenerateTypeMarkdown(in TypeDocumentation type, string baseOutputFolder, in CancellationToken cancellationToken)
+	[LoggerMessage(LogLevel.Debug, "Generated index for assembly '{assemblyName}'", EventName = "GeneratedAssemblyIndex")]
+	private static partial void LogGeneratedAssemblyIndex(ILogger logger, string assemblyName);
+
+	private static void GenerateTypeMarkdown(in TypeDocumentation type, string baseOutputFolder, in CancellationToken cancellationToken, in ILogger logger)
 	{
 		Utf16ValueStringBuilder sb = ZString.CreateStringBuilder();
 
@@ -215,12 +234,17 @@ internal sealed class MarkdownGenerator
 			AppendEvents(in type, ref sb, in cancellationToken);
 
 			sb.WriteToFile(Path.Combine(baseOutputFolder, ZString.Concat(type.FullName, ".md")));
+
+			LogGeneratedTypeMarkdown(logger, type.FullName);
 		}
 		finally
 		{
 			sb.Dispose();
 		}
 	}
+
+	[LoggerMessage(LogLevel.Debug, "Generated type markdown for '{typeName}'", EventName = "GeneratedTypeMarkdown")]
+	private static partial void LogGeneratedTypeMarkdown(ILogger logger, string typeName);
 
 	private static void AppendYamlHeader(in TypeDocumentation root, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
 	{

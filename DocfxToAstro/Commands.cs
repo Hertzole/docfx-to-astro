@@ -1,36 +1,56 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DocfxToAstro.Models;
-using VYaml.Serialization;
 using DocfxToAstro.Models.Yaml;
+using Microsoft.Extensions.Logging;
+using VYaml.Serialization;
 
 namespace DocfxToAstro;
 
-internal static class Commands
+internal static partial class Commands
 {
-	public static async Task<int> Generate(string input, string output, bool clear = false, bool verbose = false, CancellationToken cancellationToken = default)
+	/// <summary>
+	/// </summary>
+	/// <param name="input">-i, The location of all the API files</param>
+	/// <param name="output">-o, The location to put all the markdown files</param>
+	/// <param name="dontClear">Don't clear the output location before generating files</param>
+	/// <param name="verbose">Print extra information</param>
+	/// <param name="cancellationToken"></param>
+	public static async Task<int> Generate(string input,
+		string output,
+		bool dontClear = false,
+		bool verbose = false,
+		CancellationToken cancellationToken = default)
 	{
-		Logger logger = new Logger(verbose);
+		using ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
+		{
+			builder.AddConsole();
+			builder.SetMinimumLevel(verbose ? LogLevel.Debug : LogLevel.Information);
+		});
+
+		ILogger logger = loggerFactory.CreateLogger("docfx2astro");
+		LogStarting(logger);
+
 		string[] files = Directory.GetFiles(input, "*.yml", SearchOption.AllDirectories);
+		LogFoundFiles(logger, files.Length);
 
 		if (files.Length == 0)
 		{
-			logger.WriteInfo("No .yml files found in the input directory.");
+			logger.LogError("No .yml files found in the input directory.");
 			return 1;
 		}
 
-
-		if (clear)
+		if (!dontClear)
 		{
 			ClearDirectory(output, logger);
 		}
 
 		List<Root> roots = new List<Root>(files.Length);
-		
+
 		for (int i = 0; i < files.Length; i++)
 		{
 			string fileName = Path.GetFileName(files[i]);
@@ -39,25 +59,29 @@ internal static class Commands
 				continue;
 			}
 
+			LogReadingFile(logger, fileName);
+
 			await using FileStream fileStream = File.OpenRead(files[i]);
 			Root root = await YamlSerializer.DeserializeAsync<Root>(fileStream, YamlSerializerOptions.Standard);
 			roots.Add(root);
 		}
 
-		var assemblies = AssemblyDocumentation.FromRoots(roots, cancellationToken);
+		ImmutableArray<AssemblyDocumentation> assemblies = AssemblyDocumentation.FromRoots(roots, cancellationToken);
 		if (assemblies.IsDefaultOrEmpty)
 		{
+			logger.LogError("No assemblies found in the input files.");
 			return 1;
 		}
-		
+
 		MarkdownGenerator generator = new MarkdownGenerator(logger);
 
 		generator.GenerateMarkdownForAssemblies(in assemblies, Path.GetFullPath(output), cancellationToken);
 
+		LogSuccess(logger);
 		return 0;
 	}
 
-	private static void ClearDirectory(string path, Logger logger)
+	private static void ClearDirectory(string path, ILogger logger)
 	{
 		if (Directory.Exists(path))
 		{
@@ -72,6 +96,21 @@ internal static class Commands
 			}
 		}
 
-		logger.WriteDebug($"Cleared directory: {path}");
+		LogClearedDirectory(logger, path);
 	}
+
+	[LoggerMessage(LogLevel.Information, "Starting docfx2astro", EventName = "Starting")]
+	private static partial void LogStarting(ILogger logger);
+
+	[LoggerMessage(LogLevel.Debug, "Found {count} files", EventName = "FoundFiles")]
+	private static partial void LogFoundFiles(ILogger logger, int count);
+
+	[LoggerMessage(LogLevel.Debug, "Cleared directory '{directory}'", EventName = "ClearedDirectory")]
+	private static partial void LogClearedDirectory(ILogger logger, string directory);
+
+	[LoggerMessage(LogLevel.Debug, "Reading file '{fileName}'", EventName = "ReadingFile")]
+	private static partial void LogReadingFile(ILogger logger, string fileName);
+
+	[LoggerMessage(LogLevel.Information, "Successfully generated markdown files!", EventName = "Done")]
+	private static partial void LogSuccess(ILogger logger);
 }
