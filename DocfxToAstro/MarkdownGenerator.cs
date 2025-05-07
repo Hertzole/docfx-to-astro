@@ -477,11 +477,12 @@ internal sealed class MarkdownGenerator
 
 				cancellationToken.ThrowIfCancellationRequested();
 
-				Return returns = method.Returns.Value;
-				sb.AppendLine($"{returns.Type}  ");
-				if (!string.IsNullOrEmpty(returns.Description))
+				ReturnDocumentation returns = method.Returns.Value;
+				AppendTypeWithLink(returns.Type.Name, returns.Type.Link, ref sb);
+				sb.AppendLine("  ");
+				if (!string.IsNullOrEmpty(returns.Summary))
 				{
-					sb.AppendLine(returns.Description);
+					sb.AppendLine(returns.Summary);
 				}
 
 				sb.AppendLine();

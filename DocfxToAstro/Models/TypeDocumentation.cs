@@ -26,7 +26,7 @@ public sealed class TypeDocumentation
 	public TypeReferenceDocumentation[] Inheritance { get; }
 	public TypeReferenceDocumentation[] Implements { get; }
 	public ParameterDocumentation[] Parameters { get; }
-	public Return? Returns { get; }
+	public ReturnDocumentation? Returns { get; }
 	public TypeParameter[] TypeParameters { get; }
 	public ExceptionDocumentation[] Exceptions { get; }
 	public AttributeDoc[] Attributes { get; }
@@ -170,7 +170,7 @@ public sealed class TypeDocumentation
 		return result;
 	}
 
-	private static Return? GetReturn(in Item item, ReferenceCollection references)
+	private static ReturnDocumentation? GetReturn(in Item item, ReferenceCollection references)
 	{
 		if (item.Syntax == null || item.Syntax.Returns == null)
 		{
@@ -178,26 +178,18 @@ public sealed class TypeDocumentation
 		}
 
 		Return returns = item.Syntax.Returns.Value;
-		string type;
+		TypeReferenceDocumentation type;
 
 		if (references.TryGetReferenceWithLink(returns.Type, out Reference reference))
 		{
-			ReadOnlySpan<char> href = Formatters.FormatHref(reference.Href, out bool isExternalLink);
-			if (!isExternalLink)
-			{
-				type = ZString.Format("[{0}](../{1})", Formatters.FormatType(reference.Name).ToString(), href.ToString().ToLowerInvariant());
-			}
-			else
-			{
-				type = ZString.Format("[{0}]({1})", Formatters.FormatType(reference.Name).ToString(), href.ToString().ToLowerInvariant());
-			}
+			type = new TypeReferenceDocumentation(reference.Name, Link.FromReference(reference));
 		}
 		else
 		{
-			type = Formatters.FormatType(returns.Type).ToString();
+			type = new TypeReferenceDocumentation(returns.Type, Link.Empty);
 		}
 
-		return new Return(type, Formatters.FormatSummary(item.Syntax.Returns.Value.Description, references));
+		return new ReturnDocumentation(type, Formatters.FormatSummary(item.Syntax.Returns.Value.Description, references));
 	}
 
 	private static TypeParameter[] GetTypeParameters(in Item item, ReferenceCollection references)
