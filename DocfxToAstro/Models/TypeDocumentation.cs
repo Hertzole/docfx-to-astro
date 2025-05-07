@@ -23,8 +23,8 @@ public sealed class TypeDocumentation
 	public string? Syntax { get; }
 	public string? Remarks { get; }
 
-	public string[] Inheritance { get; }
-	public string[] Implements { get; }
+	public TypeReferenceDocumentation[] Inheritance { get; }
+	public TypeReferenceDocumentation[] Implements { get; }
 	public Parameter[] Parameters { get; }
 	public Return? Returns { get; }
 	public TypeParameter[] TypeParameters { get; }
@@ -35,12 +35,12 @@ public sealed class TypeDocumentation
 	{
 		get { return constructors; }
 	}
-	
+
 	public IReadOnlyList<TypeDocumentation> Fields
 	{
 		get { return fields; }
 	}
-	
+
 	public IReadOnlyList<TypeDocumentation> Properties
 	{
 		get { return properties; }
@@ -50,7 +50,7 @@ public sealed class TypeDocumentation
 	{
 		get { return methods; }
 	}
-	
+
 	public IReadOnlyList<TypeDocumentation> Events
 	{
 		get { return events; }
@@ -117,46 +117,31 @@ public sealed class TypeDocumentation
 		}
 	}
 
-	private static string[] GetReferencesArray(string[]? original, ReferenceCollection references)
+	private static TypeReferenceDocumentation[] GetReferencesArray(string[]? original, ReferenceCollection references)
 	{
 		if (original != null && original.Length > 0)
 		{
 			using Utf16ValueStringBuilder inheritanceBuilder = ZString.CreateStringBuilder(true);
-			string[] result = new string[original.Length];
+			TypeReferenceDocumentation[] result = new TypeReferenceDocumentation[original.Length];
 			for (int i = 0; i < original.Length; i++)
 			{
 				inheritanceBuilder.Clear();
+				string name = original[i];
+				Link link = Link.Empty;
 
-				if (references.TryGetReference(original[i], out Reference reference))
+				if (references.TryGetReferenceWithLink(original[i], out Reference reference))
 				{
-					if (string.IsNullOrWhiteSpace(reference.Href))
-					{
-						inheritanceBuilder.Append(reference.Name);
-					}
-					else
-					{
-						inheritanceBuilder.Append('[');
-						inheritanceBuilder.Append(reference.Name);
-						inheritanceBuilder.Append("](");
-
-						ReadOnlySpan<char> href = Formatters.FormatHref(reference.Href, out bool isExternalLink);
-						if (!isExternalLink)
-						{
-							inheritanceBuilder.Append("../");
-						}
-
-						inheritanceBuilder.Append(href.ToString().ToLowerInvariant());
-						inheritanceBuilder.Append(')');
-					}
+					link = Link.FromReference(reference);
+					name = reference.Name;
 				}
 
-				result[i] = inheritanceBuilder.ToString();
+				result[i] = new TypeReferenceDocumentation(name, link);
 			}
 
 			return result;
 		}
 
-		return Array.Empty<string>();
+		return Array.Empty<TypeReferenceDocumentation>();
 	}
 
 	private static Parameter[] GetParameters(in Item item, ReferenceCollection references)
@@ -243,8 +228,8 @@ public sealed class TypeDocumentation
 
 		return result;
 	}
-	
-	private static  ExceptionDocumentation[] GetExceptions(in Item item, ReferenceCollection references)
+
+	private static ExceptionDocumentation[] GetExceptions(in Item item, ReferenceCollection references)
 	{
 		if (item.Exceptions == null || item.Exceptions.Length == 0)
 		{

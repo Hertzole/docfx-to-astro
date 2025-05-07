@@ -256,7 +256,7 @@ internal sealed class MarkdownGenerator
 			sb.Append("Inheritance ");
 			for (int i = 0; i < type.Inheritance.Length; i++)
 			{
-				sb.Append(type.Inheritance[i]);
+				AppendTypeWithLink(type.Inheritance[i].Name, type.Inheritance[i].Link, ref sb);
 				if (i < type.Inheritance.Length - 1)
 				{
 					sb.Append(" → ");
@@ -272,7 +272,7 @@ internal sealed class MarkdownGenerator
 			sb.Append("Implements ");
 			for (int i = 0; i < type.Implements.Length; i++)
 			{
-				sb.Append(type.Implements[i]);
+				AppendTypeWithLink(type.Implements[i].Name, type.Implements[i].Link, ref sb);
 				if (i < type.Implements.Length - 1)
 				{
 					sb.Append(", ");
@@ -593,7 +593,7 @@ internal sealed class MarkdownGenerator
 
 	private static void AppendTypeWithLink(ReadOnlySpan<char> type, in Link link, ref Utf16ValueStringBuilder sb, bool writeInCode = false)
 	{
-		if (link != Link.Empty)
+		if (!link.IsEmpty)
 		{
 			sb.Append('[');
 		}
@@ -610,12 +610,12 @@ internal sealed class MarkdownGenerator
 			sb.Append('`');
 		}
 
-		if (link != Link.Empty)
+		if (!link.IsEmpty)
 		{
 			sb.Append(']');
 			sb.Append('(');
 			sb.Append(link.ToString());
-			sb.Append(')');
+			sb.Append("/)");
 		}
 	}
 }
