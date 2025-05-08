@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/Hertzole/docfx-to-astro/compare/v1.0.0...v1.0.1) (2025-05-08)
+
+
+### Bug Fixes
+
+* packages not being included ([f290444](https://github.com/Hertzole/docfx-to-astro/commit/f290444d2b29d3532ccdfa65984310391c70ae76))
+
 # 1.0.0 (2025-05-08)
 
 
