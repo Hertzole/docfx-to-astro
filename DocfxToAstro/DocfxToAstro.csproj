@@ -21,7 +21,16 @@
         <ToolCommandName>docfx2astro</ToolCommandName>
         <PackageOutputPath>./nupkg</PackageOutputPath>
         <PackageId>hertzole.docfx2astro</PackageId>
+        <RepositoryUrl>https://github.com/Hertzole/docfx-to-astro</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\README.md" Pack="true" PackagePath="\"/>
+        <None Include="..\LICENSE" Pack="true" PackagePath="\"/>
+    </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="ConsoleAppFramework" Version="5.4.1">
