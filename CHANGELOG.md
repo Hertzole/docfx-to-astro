@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/Hertzole/docfx-to-astro/compare/v1.0.1...v1.1.0) (2025-05-14)
+
+
+### Features
+
+* add baseSlug parameter ([edd8903](https://github.com/Hertzole/docfx-to-astro/commit/edd8903ebb78770cdad4da7e2467bbc01deacbc6))
+
 ## [1.0.1](https://github.com/Hertzole/docfx-to-astro/compare/v1.0.0...v1.0.1) (2025-05-08)
 
 

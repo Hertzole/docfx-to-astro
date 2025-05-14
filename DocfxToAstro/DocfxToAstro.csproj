@@ -12,8 +12,8 @@
         <Title>docfx2astro</Title>
         <Authors>Hertzole</Authors>
         <Company>Hertzole</Company>
-        <Version>1.0.1</Version>
-        <AssemblyVersion>1.0.1</AssemblyVersion>
+        <Version>1.1.0</Version>
+        <AssemblyVersion>1.1.0</AssemblyVersion>
     </PropertyGroup>
 
     <PropertyGroup>
