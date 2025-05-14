@@ -13,10 +13,12 @@ namespace DocfxToAstro;
 internal sealed partial class MarkdownGenerator
 {
 	private readonly ILogger logger;
+	private readonly string? baseSlug;
 
-	public MarkdownGenerator(ILogger logger)
+	public MarkdownGenerator(ILogger logger, string baseSlug)
 	{
 		this.logger = logger;
+		this.baseSlug = Formatters.FormatSlug(baseSlug).ToString();
 	}
 
 	public void GenerateMarkdownForAssemblies(in ImmutableArray<AssemblyDocumentation> assemblies,
@@ -76,7 +78,7 @@ internal sealed partial class MarkdownGenerator
 
 		for (int i = 0; i < assemblies.Length; i++)
 		{
-			GenerateAssemblyMarkdown(in assemblies.ItemRef(i), baseOutputFolder, in cancellationToken, in logger);
+			GenerateAssemblyMarkdown(in assemblies.ItemRef(i), baseOutputFolder, baseSlug, in cancellationToken, in logger);
 		}
 
 		static void WriteCount(string name, int count, ref Utf16ValueStringBuilder sb)
@@ -98,6 +100,7 @@ internal sealed partial class MarkdownGenerator
 
 	private static void GenerateAssemblyMarkdown(in AssemblyDocumentation assembly,
 		string baseOutputFolder,
+		string? baseSlug,
 		in CancellationToken cancellationToken,
 		in ILogger logger)
 	{
@@ -110,11 +113,11 @@ internal sealed partial class MarkdownGenerator
 			Directory.CreateDirectory(outputFolder);
 		}
 
-		GenerateIndexForAssembly(in assembly, outputFolder, in cancellationToken, in logger);
+		GenerateIndexForAssembly(in assembly, outputFolder, baseSlug, in cancellationToken, in logger);
 
 		for (int i = 0; i < assembly.Types.Length; i++)
 		{
-			GenerateTypeMarkdown(in assembly.Types.ItemRef(i), outputFolder, in cancellationToken, in logger);
+			GenerateTypeMarkdown(in assembly.Types.ItemRef(i), outputFolder, baseSlug, in cancellationToken, in logger);
 		}
 	}
 
@@ -123,6 +126,7 @@ internal sealed partial class MarkdownGenerator
 
 	private static void GenerateIndexForAssembly(in AssemblyDocumentation assembly,
 		string outputFolder,
+		string? baseSlug,
 		in CancellationToken cancellationToken,
 		in ILogger logger)
 	{
@@ -134,7 +138,14 @@ internal sealed partial class MarkdownGenerator
 			indexBuilder.AppendLine("---");
 			indexBuilder.Append("title: ");
 			indexBuilder.AppendLine(assembly.Name);
-			indexBuilder.Append("slug: reference/");
+			indexBuilder.Append("slug: ");
+
+			if (!string.IsNullOrWhiteSpace(baseSlug))
+			{
+				indexBuilder.Append(baseSlug);
+				indexBuilder.Append('/');
+			}
+
 			indexBuilder.AppendLine(assembly.Name.ToLowerInvariant());
 			indexBuilder.AppendLine("sidebar:");
 			indexBuilder.AppendLine("  order: 0");
@@ -219,13 +230,17 @@ internal sealed partial class MarkdownGenerator
 	[LoggerMessage(LogLevel.Debug, "Generated index for assembly '{assemblyName}'", EventName = "GeneratedAssemblyIndex")]
 	private static partial void LogGeneratedAssemblyIndex(ILogger logger, string assemblyName);
 
-	private static void GenerateTypeMarkdown(in TypeDocumentation type, string baseOutputFolder, in CancellationToken cancellationToken, in ILogger logger)
+	private static void GenerateTypeMarkdown(in TypeDocumentation type,
+		string baseOutputFolder,
+		string? baseSlug,
+		in CancellationToken cancellationToken,
+		in ILogger logger)
 	{
 		Utf16ValueStringBuilder sb = ZString.CreateStringBuilder();
 
 		try
 		{
-			AppendYamlHeader(in type, ref sb, in cancellationToken);
+			AppendYamlHeader(in type, baseSlug, ref sb, in cancellationToken);
 			AppendDefinition(in type, ref sb, in cancellationToken);
 			AppendConstructors(in type, ref sb, in cancellationToken);
 			AppendFields(in type, ref sb, in cancellationToken);
@@ -233,9 +248,11 @@ internal sealed partial class MarkdownGenerator
 			AppendMethods(in type, ref sb, in cancellationToken);
 			AppendEvents(in type, ref sb, in cancellationToken);
 
-			sb.WriteToFile(Path.Combine(baseOutputFolder, ZString.Concat(type.FullName, ".md")));
+			string path = Path.Combine(baseOutputFolder, ZString.Concat(type.FullName, ".md"));
 
-			LogGeneratedTypeMarkdown(logger, type.FullName);
+			sb.WriteToFile(path);
+
+			LogGeneratedTypeMarkdown(logger, type.FullName, path);
 		}
 		finally
 		{
@@ -243,10 +260,10 @@ internal sealed partial class MarkdownGenerator
 		}
 	}
 
-	[LoggerMessage(LogLevel.Debug, "Generated type markdown for '{typeName}'", EventName = "GeneratedTypeMarkdown")]
-	private static partial void LogGeneratedTypeMarkdown(ILogger logger, string typeName);
+	[LoggerMessage(LogLevel.Debug, "Generated type markdown for '{typeName}' to '{path}'", EventName = "GeneratedTypeMarkdown")]
+	private static partial void LogGeneratedTypeMarkdown(ILogger logger, string typeName, string path);
 
-	private static void AppendYamlHeader(in TypeDocumentation root, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
+	private static void AppendYamlHeader(in TypeDocumentation root, string? baseSlug, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 
@@ -273,7 +290,13 @@ internal sealed partial class MarkdownGenerator
 				break;
 		}
 
-		sb.Append("slug: reference/");
+		sb.Append("slug: ");
+		if (!string.IsNullOrWhiteSpace(baseSlug))
+		{
+			sb.Append(baseSlug);
+			sb.Append('/');
+		}
+
 		sb.AppendLine(root.Link.ToString(string.Empty));
 		sb.AppendLine("sidebar:");
 		sb.Append("  label: ");

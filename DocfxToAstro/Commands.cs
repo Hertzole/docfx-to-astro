@@ -17,11 +17,13 @@ internal static partial class Commands
 	/// </summary>
 	/// <param name="input">-i, The location of all the API files</param>
 	/// <param name="output">-o, The location to put all the markdown files</param>
+	/// <param name="baseSlug">The base slug to use in urls</param>
 	/// <param name="dontClear">Don't clear the output location before generating files</param>
 	/// <param name="verbose">Print extra information</param>
 	/// <param name="cancellationToken"></param>
 	public static async Task<int> Generate(string input,
 		string output,
+		string baseSlug = "reference",
 		bool dontClear = false,
 		bool verbose = false,
 		CancellationToken cancellationToken = default)
@@ -73,7 +75,7 @@ internal static partial class Commands
 			return 1;
 		}
 
-		MarkdownGenerator generator = new MarkdownGenerator(logger);
+		MarkdownGenerator generator = new MarkdownGenerator(logger, baseSlug);
 
 		generator.GenerateMarkdownForAssemblies(in assemblies, Path.GetFullPath(output), cancellationToken);
 

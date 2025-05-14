@@ -121,4 +121,14 @@ internal static partial class Formatters
 
 		return sb.AsSpan();
 	}
+
+	public static ReadOnlySpan<char> FormatSlug(ReadOnlySpan<char> value)
+	{
+		if (!value.EndsWith('/'))
+		{
+			return value;
+		}
+
+		return value.Slice(0, value.Length - 1);
+	}
 }
