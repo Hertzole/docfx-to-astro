@@ -1,3 +1,5 @@
+[![NuGet Version](https://img.shields.io/nuget/v/hertzole.docfx2astro?logo=nuget)](https://www.nuget.org/packages/hertzole.docfx2astro)
+
 *Because DocFX's built-in markdown is not very good*
 
 If it wasn't clear from the title, this tool converts docfx metadata to [Astro Starlight](https://starlight.astro.build/) markdown.
@@ -20,7 +22,11 @@ Then use docfx2astro to convert the metadata to markdown.
 docfx2astro -i <path to docfx metadata> -o <path to output markdown>
 ```
 
+This will generate a global index file, a folder for each assembly with an index landing page, and a page for each type. By default, they will generate with a `/reference/` slug/base path. You can change this with the `base-slug` parameter.
+
 ## Installation
+
+Install from [NuGet](https://www.nuget.org/packages/hertzole.docfx2astro).
 
 ```bash
 dotnet tool install -g hertzole.docfx2astro
