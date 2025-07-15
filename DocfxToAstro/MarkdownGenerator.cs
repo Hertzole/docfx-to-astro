@@ -248,7 +248,7 @@ internal sealed partial class MarkdownGenerator
 			AppendMethods(in type, ref sb, in cancellationToken);
 			AppendEvents(in type, ref sb, in cancellationToken);
 
-			string path = Path.Combine(baseOutputFolder, ZString.Concat(type.FullName, ".md"));
+			string path = Path.Combine(baseOutputFolder, ZString.Concat(type.Uid.Replace("`", "-"), ".md"));
 
 			sb.WriteToFile(path);
 

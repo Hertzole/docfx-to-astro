@@ -8,13 +8,13 @@ namespace DocfxToAstro.Models;
 
 public sealed class TypeDocumentation
 {
-	private readonly string uid;
 	private readonly List<TypeDocumentation> constructors = new List<TypeDocumentation>();
 	private readonly List<TypeDocumentation> fields = new List<TypeDocumentation>();
 	private readonly List<TypeDocumentation> properties = new List<TypeDocumentation>();
 	private readonly List<TypeDocumentation> methods = new List<TypeDocumentation>();
 	private readonly List<TypeDocumentation> events = new List<TypeDocumentation>();
 
+	public string Uid { get; }
 	public string Name { get; }
 	public string FullName { get; }
 	public ItemType Type { get; }
@@ -58,7 +58,7 @@ public sealed class TypeDocumentation
 
 	public TypeDocumentation(Item item, ReferenceCollection references)
 	{
-		uid = item.Uid!;
+		Uid = item.Uid!;
 
 		Name = item.Name!;
 		FullName = item.FullName!;
@@ -87,7 +87,7 @@ public sealed class TypeDocumentation
 		for (int i = 0; i < items.Count; i++)
 		{
 			// Skip if the item is not a child of this type
-			if (items[i].Parent != uid)
+			if (items[i].Parent != Uid)
 			{
 				continue;
 			}
