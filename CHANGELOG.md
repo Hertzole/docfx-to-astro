@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/Hertzole/docfx-to-astro/compare/v1.1.0...v1.1.1) (2025-07-15)
+
+
+### Bug Fixes
+
+* generic file naming ([7c9ddbb](https://github.com/Hertzole/docfx-to-astro/commit/7c9ddbb2bba75c1e338f70c772a45077eb70a311)), closes [#1](https://github.com/Hertzole/docfx-to-astro/issues/1)
+
 # [1.1.0](https://github.com/Hertzole/docfx-to-astro/compare/v1.0.1...v1.1.0) (2025-05-14)
 
 
