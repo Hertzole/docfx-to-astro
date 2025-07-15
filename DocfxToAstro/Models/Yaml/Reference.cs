@@ -13,8 +13,9 @@ public partial struct Reference
 		get { return name;}
 		set
 		{
-			name = value.Replace("<", "\\<").Replace(">", "\\>");
-		} }
+			name = value?.Replace("<", "\\<").Replace(">", "\\>") ?? string.Empty;
+		}
+	}
 	
 	public string Href { get; set; }
 }
