@@ -18,12 +18,14 @@ internal static partial class Commands
 	/// <param name="input">-i, The location of all the API files</param>
 	/// <param name="output">-o, The location to put all the markdown files</param>
 	/// <param name="baseSlug">The base slug to use in urls</param>
+	/// <param name="groupBy">Group documentation by assembly or namespace</param>
 	/// <param name="dontClear">Don't clear the output location before generating files</param>
 	/// <param name="verbose">Print extra information</param>
 	/// <param name="cancellationToken"></param>
 	public static async Task<int> Generate(string input,
 		string output,
 		string baseSlug = "reference",
+		GroupingStrategy groupBy = GroupingStrategy.Assembly,
 		bool dontClear = false,
 		bool verbose = false,
 		CancellationToken cancellationToken = default)
@@ -68,16 +70,30 @@ internal static partial class Commands
 			roots.Add(root);
 		}
 
-		ImmutableArray<AssemblyDocumentation> assemblies = AssemblyDocumentation.FromRoots(roots, cancellationToken);
-		if (assemblies.IsDefaultOrEmpty)
-		{
-			logger.LogError("No assemblies found in the input files.");
-			return 1;
-		}
-
 		MarkdownGenerator generator = new MarkdownGenerator(logger, baseSlug);
 
-		generator.GenerateMarkdownForAssemblies(in assemblies, Path.GetFullPath(output), cancellationToken);
+		if (groupBy == GroupingStrategy.Namespace)
+		{
+			ImmutableArray<NamespaceDocumentation> namespaces = NamespaceDocumentation.FromRoots(roots, cancellationToken);
+			if (namespaces.IsDefaultOrEmpty)
+			{
+				logger.LogError("No namespaces found in the input files.");
+				return 1;
+			}
+
+			generator.GenerateMarkdownForNamespaces(in namespaces, Path.GetFullPath(output), cancellationToken);
+		}
+		else
+		{
+			ImmutableArray<AssemblyDocumentation> assemblies = AssemblyDocumentation.FromRoots(roots, cancellationToken);
+			if (assemblies.IsDefaultOrEmpty)
+			{
+				logger.LogError("No assemblies found in the input files.");
+				return 1;
+			}
+
+			generator.GenerateMarkdownForAssemblies(in assemblies, Path.GetFullPath(output), cancellationToken);
+		}
 
 		LogSuccess(logger);
 		return 0;

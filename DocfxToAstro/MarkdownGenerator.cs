@@ -95,6 +95,80 @@ internal sealed partial class MarkdownGenerator
 		}
 	}
 
+	public void GenerateMarkdownForNamespaces(in ImmutableArray<NamespaceDocumentation> namespaces,
+		string baseOutputFolder,
+		CancellationToken cancellationToken = default)
+	{
+		if (!Directory.Exists(baseOutputFolder))
+		{
+			Directory.CreateDirectory(baseOutputFolder);
+		}
+
+		Utf16ValueStringBuilder indexBuilder = ZString.CreateStringBuilder(true);
+
+		try
+		{
+			indexBuilder.AppendLine("---");
+			indexBuilder.AppendLine("title: API Reference");
+			indexBuilder.AppendLine("sidebar:");
+			indexBuilder.AppendLine("  hidden: true");
+			indexBuilder.AppendLine("---");
+			indexBuilder.AppendLine();
+
+			ImmutableArray<NamespaceDocumentation> namespacesSorted = namespaces.Sort(static (x, y) => string.Compare(x.Name, y.Name, StringComparison.Ordinal));
+
+			for (int i = 0; i < namespacesSorted.Length; i++)
+			{
+				NamespaceDocumentation namespaceDoc = namespacesSorted.ItemRef(i);
+
+				indexBuilder.Append("## [");
+				indexBuilder.Append(namespaceDoc.Name);
+				indexBuilder.Append("](./");
+				indexBuilder.Append(namespaceDoc.Name.ToLowerInvariant());
+				indexBuilder.AppendLine("/)");
+				indexBuilder.AppendLine();
+
+				int classCount = namespaceDoc.Types.Count(static x => x.Type == ItemType.Class);
+				int structCount = namespaceDoc.Types.Count(static x => x.Type == ItemType.Struct);
+				int interfaceCount = namespaceDoc.Types.Count(static x => x.Type == ItemType.Interface);
+				int enumCount = namespaceDoc.Types.Count(static x => x.Type == ItemType.Enum);
+				int delegateCount = namespaceDoc.Types.Count(static x => x.Type == ItemType.Delegate);
+
+				WriteCount("Classes", classCount, ref indexBuilder);
+				WriteCount("Structs", structCount, ref indexBuilder);
+				WriteCount("Interfaces", interfaceCount, ref indexBuilder);
+				WriteCount("Enums", enumCount, ref indexBuilder);
+				WriteCount("Delegates", delegateCount, ref indexBuilder);
+				indexBuilder.AppendLine();
+			}
+
+			indexBuilder.WriteToFile(Path.Combine(baseOutputFolder, "index.md"));
+			LogGeneratedGlobalIndex(logger);
+		}
+		finally
+		{
+			indexBuilder.Dispose();
+		}
+
+		for (int i = 0; i < namespaces.Length; i++)
+		{
+			GenerateNamespaceMarkdown(in namespaces.ItemRef(i), baseOutputFolder, baseSlug, in cancellationToken, in logger);
+		}
+
+		static void WriteCount(string name, int count, ref Utf16ValueStringBuilder sb)
+		{
+			if (count == 0)
+			{
+				return;
+			}
+
+			sb.Append("- **");
+			sb.Append(name);
+			sb.Append("**: ");
+			sb.AppendLine(count);
+		}
+	}
+
 	[LoggerMessage(LogLevel.Debug, "Generated global index", EventName = "GeneratedGlobalIndex")]
 	private static partial void LogGeneratedGlobalIndex(ILogger logger);
 
@@ -121,8 +195,34 @@ internal sealed partial class MarkdownGenerator
 		}
 	}
 
+	private static void GenerateNamespaceMarkdown(in NamespaceDocumentation namespaceDoc,
+		string baseOutputFolder,
+		string? baseSlug,
+		in CancellationToken cancellationToken,
+		in ILogger logger)
+	{
+		string outputFolder = Path.Combine(baseOutputFolder, namespaceDoc.Name);
+
+		LogGeneratingNamespaceMarkdown(logger, namespaceDoc.Name, outputFolder);
+
+		if (!Directory.Exists(outputFolder))
+		{
+			Directory.CreateDirectory(outputFolder);
+		}
+
+		GenerateIndexForNamespace(in namespaceDoc, outputFolder, baseSlug, in cancellationToken, in logger);
+
+		for (int i = 0; i < namespaceDoc.Types.Length; i++)
+		{
+			GenerateTypeMarkdown(in namespaceDoc.Types.ItemRef(i), outputFolder, baseSlug, in cancellationToken, in logger);
+		}
+	}
+
 	[LoggerMessage(LogLevel.Debug, "Generating markdown for assembly '{assemblyName}' to '{outputFolder}'", EventName = "GeneratingAssemblyMarkdown")]
 	private static partial void LogGeneratingAssemblyMarkdown(ILogger logger, string assemblyName, string outputFolder);
+
+	[LoggerMessage(LogLevel.Debug, "Generating markdown for namespace '{namespaceName}' to '{outputFolder}'", EventName = "GeneratingNamespaceMarkdown")]
+	private static partial void LogGeneratingNamespaceMarkdown(ILogger logger, string namespaceName, string outputFolder);
 
 	private static void GenerateIndexForAssembly(in AssemblyDocumentation assembly,
 		string outputFolder,
@@ -227,8 +327,114 @@ internal sealed partial class MarkdownGenerator
 		}
 	}
 
+	private static void GenerateIndexForNamespace(in NamespaceDocumentation namespaceDoc,
+		string outputFolder,
+		string? baseSlug,
+		in CancellationToken cancellationToken,
+		in ILogger logger)
+	{
+		cancellationToken.ThrowIfCancellationRequested();
+
+		Utf16ValueStringBuilder indexBuilder = ZString.CreateStringBuilder();
+		try
+		{
+			indexBuilder.AppendLine("---");
+			indexBuilder.Append("title: ");
+			indexBuilder.AppendLine(namespaceDoc.Name);
+			indexBuilder.Append("slug: ");
+
+			if (!string.IsNullOrWhiteSpace(baseSlug))
+			{
+				indexBuilder.Append(baseSlug);
+				indexBuilder.Append('/');
+			}
+
+			indexBuilder.AppendLine(namespaceDoc.Name.ToLowerInvariant());
+			indexBuilder.AppendLine("sidebar:");
+			indexBuilder.AppendLine("  order: 0");
+			indexBuilder.AppendLine("---");
+
+			List<TypeDocumentation> classes = namespaceDoc.Types.Where(static x => x.Type == ItemType.Class).ToList();
+			List<TypeDocumentation> structs = namespaceDoc.Types.Where(static x => x.Type == ItemType.Struct).ToList();
+			List<TypeDocumentation> interfaces = namespaceDoc.Types.Where(static x => x.Type == ItemType.Interface).ToList();
+			List<TypeDocumentation> enums = namespaceDoc.Types.Where(static x => x.Type == ItemType.Enum).ToList();
+			List<TypeDocumentation> delegates = namespaceDoc.Types.Where(static x => x.Type == ItemType.Delegate).ToList();
+
+			Write("Classes", classes, ref indexBuilder, in cancellationToken);
+			Write("Structs", structs, ref indexBuilder, in cancellationToken);
+			Write("Interfaces", interfaces, ref indexBuilder, in cancellationToken);
+			Write("Enums", enums, ref indexBuilder, in cancellationToken);
+			Write("Delegates", delegates, ref indexBuilder, in cancellationToken);
+
+			indexBuilder.WriteToFile(Path.Combine(outputFolder, "index.md"));
+
+			LogGeneratedNamespaceIndex(logger, namespaceDoc.Name);
+		}
+		finally
+		{
+			indexBuilder.Dispose();
+		}
+
+		static void Write(string header, List<TypeDocumentation> types, ref Utf16ValueStringBuilder sb, in CancellationToken cancellationToken)
+		{
+			if (types.Count == 0)
+			{
+				return;
+			}
+
+			using Utf16ValueStringBuilder nameBuilder = ZString.CreateStringBuilder();
+
+			types.Sort(Comparison);
+
+			sb.Append("## ");
+			sb.AppendLine(header);
+			sb.AppendLine();
+
+			sb.AppendLine("| | |");
+			sb.AppendLine("| --- | --- |");
+			for (int i = 0; i < types.Count; i++)
+			{
+				cancellationToken.ThrowIfCancellationRequested();
+				nameBuilder.Clear();
+
+				TypeDocumentation type = types[i];
+
+				nameBuilder.Append(type.Name);
+				if (type.TypeParameters.Length > 0)
+				{
+					nameBuilder.Append("\\<");
+					for (int j = 0; j < type.TypeParameters.Length; j++)
+					{
+						nameBuilder.Append(type.TypeParameters[j].Id);
+
+						if (j < type.TypeParameters.Length - 1)
+						{
+							nameBuilder.Append(", ");
+						}
+					}
+
+					nameBuilder.Append("\\>");
+				}
+
+				sb.Append("| ");
+				AppendTypeWithLink(nameBuilder.AsSpan(), type.Link, ref sb);
+				sb.Append(" | ");
+				sb.Append(string.IsNullOrWhiteSpace(type.Summary) ? string.Empty : type.Summary);
+				sb.AppendLine(" |");
+			}
+		}
+
+		static int Comparison(TypeDocumentation x, TypeDocumentation y)
+		{
+			return string.Compare(x.Name, y.Name, StringComparison.Ordinal);
+		}
+	}
+
 	[LoggerMessage(LogLevel.Debug, "Generated index for assembly '{assemblyName}'", EventName = "GeneratedAssemblyIndex")]
 	private static partial void LogGeneratedAssemblyIndex(ILogger logger, string assemblyName);
+
+	[LoggerMessage(LogLevel.Debug, "Generated index for namespace '{namespaceName}'", EventName = "GeneratedNamespaceIndex")]
+	private static partial void LogGeneratedNamespaceIndex(ILogger logger, string namespaceName);
 
 	private static void GenerateTypeMarkdown(in TypeDocumentation type,
 		string baseOutputFolder,
