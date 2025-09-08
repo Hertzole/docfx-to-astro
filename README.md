@@ -39,6 +39,12 @@ dotnet tool install -g hertzole.docfx2astro
 Used in types slugs. By default, it will be `reference`, so your types will be `/reference/namespace.type`. Setting
 `base-slug` to something like `api` will result in a slug `/api/namespace.type`. Can also be left empty.
 
+### `group-by`
+
+Controls how documentation is organized. By default, documentation is grouped by `Assembly`. Setting this to `Namespace` will group types by their namespace instead. Valid values are:
+- `Assembly` (default) - Groups types by their containing assembly
+- `Namespace` - Groups types by their namespace
+
 ### `dont-clear`
 
 When set, the output directory will not be cleared before writing. By default, this is `false`.
