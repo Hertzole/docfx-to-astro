@@ -1,7 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 using Cysharp.Text;
 using DocfxToAstro.Helpers;
@@ -176,8 +176,26 @@ internal static partial class Formatters
 			}
 			else
 			{
-				Span<char> referenceName = value.Name.Where(char.IsLetterOrDigit).ToArray();
-				sb.Append(referenceName);
+				// Some characters are turned into `-` while some are removed from links.
+				// Additionally, `-` can't appear twice in a row. We replicate that behavior here.
+				// I haven't looked at the actual implementation in Astro/Starlight
+				// so this is probably not 100% accurate.
+
+				Span<char> referenceName = [..
+					value.Name.Where(x => char.IsLetterOrDigit(x) || x is ' ' or ',')
+					.Select(x => x is ' ' or ',' ? '-' : x)
+				];
+
+				StringBuilder linkNameCleaner = new();
+
+				foreach (var element in referenceName)
+				{
+					if (element is '-' && linkNameCleaner.Length > 0 && linkNameCleaner[^1] == element)
+						continue;
+
+					linkNameCleaner.Append(element);
+				}
+				sb.Append(linkNameCleaner.ToString());
 			}
 			isMemberLink = true;
 		}

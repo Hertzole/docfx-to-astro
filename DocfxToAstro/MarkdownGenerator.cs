@@ -753,7 +753,7 @@ internal sealed partial class MarkdownGenerator
 
 			TypeDocumentation method = methods[i];
 			sb.Append("### ");
-			sb.AppendLine(method.Name);
+			sb.AppendLine(method.MarkdownName);
 			sb.AppendLine();
 
 			AppendObsoleteWarning(in method, ref sb, in cancellationToken);

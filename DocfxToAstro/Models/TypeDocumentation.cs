@@ -16,6 +16,7 @@ public sealed class TypeDocumentation
 
 	public string Uid { get; }
 	public string Name { get; }
+	public string MarkdownName { get; }
 	public string FullName { get; }
 	public ItemType Type { get; }
 	public string? Summary { get; }
@@ -61,6 +62,7 @@ public sealed class TypeDocumentation
 		Uid = item.Uid!;
 
 		Name = item.Name!;
+		MarkdownName = Name.Replace("<", @"\<");
 		FullName = item.FullName!;
 		Type = item.Type;
 		Summary = Formatters.FormatSummary(item.Summary, references);
