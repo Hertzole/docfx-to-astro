@@ -6,16 +6,27 @@ namespace DocfxToAstro.Models.Yaml;
 public partial struct Reference
 {
 	private string name;
-	
+
 	public string Uid { get; set; }
 	public string Name
 	{
-		get { return name;}
+		get { return name; }
 		set
 		{
 			name = value?.Replace("<", "\\<").Replace(">", "\\>") ?? string.Empty;
 		}
 	}
-	
+
 	public string Href { get; set; }
+
+	[YamlMember("spec.csharp")]
+	public SpecCSharp[]? SpecCSharp { get; set; }
+
+}
+
+[YamlObject]
+public partial struct SpecCSharp
+{
+	public string? Uid { get; set; }
+	public string? Href { get; set; }
 }

@@ -108,8 +108,25 @@ internal static partial class Formatters
 			string uid = match.Groups[1].Value;
 			if (references.TryGetReferenceWithLink(uid, out Reference reference))
 			{
+				var hrefToUse = reference.Href;
+
+				// I don't understand why, but if we want the actual link for the type,
+				// we need to get the one from spec.csharp that matches our uid.
+				// At least, this is the case for direct references to subtypes (not their members).
+				if (reference.SpecCSharp is { } specs && specs.Length > 0)
+				{
+					foreach (var spec in specs)
+					{
+						if (spec.Uid == reference.Uid && spec.Href is { } specHref)
+						{
+							hrefToUse = specHref;
+							break;
+						}
+					}
+				}
+
 				ReadOnlySpan<char> href = FormatHref(
-					reference.Href,
+					hrefToUse,
 					reference,
 					out bool
 					isExternalLink,
