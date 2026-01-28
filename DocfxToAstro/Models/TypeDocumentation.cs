@@ -168,7 +168,11 @@ public sealed class TypeDocumentation
 
 			TypeReferenceDocumentation type = new TypeReferenceDocumentation(name, link);
 
-			result[i] = new ParameterDocumentation(parameter.Id, type, parameter.Description);
+			result[i] = new ParameterDocumentation(
+				parameter.Id,
+				type,
+				Formatters.FormatSummary(parameter.Description, references)
+			);
 		}
 
 		return result;
