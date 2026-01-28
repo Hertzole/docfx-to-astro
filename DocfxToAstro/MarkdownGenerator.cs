@@ -664,7 +664,7 @@ internal sealed partial class MarkdownGenerator
 				sb.AppendLine("```");
 			}
 
-			WriteRemarks(in property, ref sb, in cancellationToken);
+			WriteRemarks(in property, ref sb, in cancellationToken, "####");
 
 			sb.AppendLine();
 		}
