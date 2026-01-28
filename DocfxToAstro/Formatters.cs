@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Cysharp.Text;
 using DocfxToAstro.Helpers;
@@ -56,8 +57,18 @@ internal static partial class Formatters
 			string uid = match.Groups[1].Value;
 			if (references.TryGetReferenceWithLink(uid, out Reference reference))
 			{
-				ReadOnlySpan<char> href = FormatHref(reference.Href, out bool isExternalLink);
-				sb.Replace(match.Groups[0].ValueSpan, $"[{reference.Name}]({(isExternalLink ? string.Empty : "../")}{href.ToString().ToLowerInvariant()}/)");
+				ReadOnlySpan<char> href = FormatHref(
+					reference.Href,
+					reference,
+					out bool
+					isExternalLink,
+					out bool isMemberLink
+				);
+				sb.Replace(
+					match.Groups[0].ValueSpan,
+					$"[{reference.Name}]({(isExternalLink ? string.Empty : "../")}"
+					+ $"{href.ToString().ToLowerInvariant()}{(isMemberLink ? string.Empty : '/')})"
+				);
 			}
 			else
 			{
@@ -68,8 +79,21 @@ internal static partial class Formatters
 		return sb.AsSpan().Trim().ToString();
 	}
 
-	public static ReadOnlySpan<char> FormatHref(ReadOnlySpan<char> href, out bool isExternalLink)
+	public static ReadOnlySpan<char> FormatHref(
+		ReadOnlySpan<char> href,
+		Reference? reference,
+		out bool isExternalLink
+	) => FormatHref(href, reference, out isExternalLink, out _);
+
+	public static ReadOnlySpan<char> FormatHref(
+		ReadOnlySpan<char> href,
+		Reference? reference,
+		out bool isExternalLink,
+		out bool isMemberLink
+	)
 	{
+		isMemberLink = false;
+
 		if (href.StartsWith("https://") || href.StartsWith("http://"))
 		{
 			isExternalLink = true;
@@ -94,7 +118,17 @@ internal static partial class Formatters
 			sb.Clear();
 			sb.Append(match.Groups[1].Value);
 			sb.Append("/#");
-			sb.Append(match.Groups[3].Value);
+			var group3 = match.Groups[3].Value;
+			if (group3 is not "" || reference is not { } value)
+			{
+				sb.Append(group3);
+			}
+			else
+			{
+				Span<char> referenceName = value.Name.Where(char.IsLetterOrDigit).ToArray();
+				sb.Append(referenceName);
+			}
+			isMemberLink = true;
 		}
 
 		isExternalLink = false;

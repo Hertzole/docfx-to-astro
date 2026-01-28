@@ -18,7 +18,7 @@ public readonly record struct Link(bool IsExternalLink, string Href)
 
 	public static Link FromReference(in Reference reference)
 	{
-		ReadOnlySpan<char> href = Formatters.FormatHref(reference.Href, out bool isExternalLink);
+		ReadOnlySpan<char> href = Formatters.FormatHref(reference.Href, reference, out bool isExternalLink);
 		Span<char> result = stackalloc char[href.Length];
 		href.CopyTo(result);
 		href.ToLowerInvariant(result);

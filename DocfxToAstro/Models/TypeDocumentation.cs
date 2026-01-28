@@ -70,7 +70,7 @@ public sealed class TypeDocumentation
 			Syntax = item.Syntax.Content.Trim();
 		}
 
-		Link = new Link(false, ZString.Concat(Formatters.FormatHref(item.Uid!, out _).ToString().ToLowerInvariant()));
+		Link = new Link(false, ZString.Concat(Formatters.FormatHref(item.Uid!, null, out _).ToString().ToLowerInvariant()));
 
 		Inheritance = GetReferencesArray(item.Inheritance, references);
 		Implements = GetReferencesArray(item.Implements, references);
