@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text.RegularExpressions;
 using Cysharp.Text;
 using DocfxToAstro.Helpers;
@@ -14,6 +16,12 @@ internal static partial class Formatters
 
 	[GeneratedRegex("<code\\s?(?:class=\".*?\")?>(.*?)</code>", RegexOptions.CultureInvariant)]
 	private static partial Regex CodeOpenTagRegex();
+
+	[GeneratedRegex(
+		"<pre><code\\s?(?:class=\"(.*?)\")?>(.*?)</code></pre>",
+		RegexOptions.CultureInvariant | RegexOptions.Singleline
+	)]
+	private static partial Regex CodeOpenTagMultilineRegex();
 
 	[GeneratedRegex(@"\S(\s{0,1}\n\s*)\S", RegexOptions.CultureInvariant)]
 	private static partial Regex InvalidNewLineRegex();
@@ -34,14 +42,57 @@ internal static partial class Formatters
 		MatchCollection firstMatches = CodeOpenTagRegex().Matches(summary);
 		foreach (Match match in firstMatches)
 		{
-			summary = summary.Replace(match.Groups[0].Value, $"`{match.Groups[1].Value}`");
-			sb.Replace(match.Groups[0].ValueSpan, $"`{match.Groups[1].Value}`");
+			// Note: HtmlDecode is only necessary here because code blocks
+			// (without being wrapped in <pre></pre>) make the characters
+			// be interpreted literally.
+			var decoded = WebUtility.HtmlDecode($"`{match.Groups[1].Value}`");
+
+			summary = summary.Replace(match.Groups[0].Value, decoded);
+			sb.Replace(match.Groups[0].ValueSpan, decoded);
+		}
+
+		(Match, string)[] multilineMatches = [..
+			CodeOpenTagMultilineRegex()
+				.Matches(summary)
+				.Select(x => (x, Guid.NewGuid().ToString()))
+		];
+
+		// We avoid multiline code blocks from getting their newlines removed
+		// by substituting the match with a guid before invalid newlines are removed.
+		// After it, we replace the guid with what we want.
+		foreach ((Match match, string guid) in multilineMatches)
+		{
+			summary = summary.Replace(match.Groups[0].Value, guid);
+			sb.Replace(match.Groups[0].ValueSpan, guid);
 		}
 
 		MatchCollection newLineMatches = InvalidNewLineRegex().Matches(summary);
 		foreach (Match match in newLineMatches)
 		{
 			sb.Replace(match.Groups[1].ValueSpan, " ");
+		}
+
+		foreach ((Match match, string guid) in multilineMatches)
+		{
+#if NET9_0_OR_GREATER
+			ReadOnlySpan<char> language = match.Groups[1].ValueSpan;
+			if (language.StartsWith("lang-"))
+				language = language[5..];
+#else
+			ReadOnlySpan<char> languageSpan = match.Groups[1].ValueSpan;
+			if (languageSpan.StartsWith("lang-"))
+				languageSpan = languageSpan[5..];
+
+			string language = languageSpan.ToString();
+#endif
+			// We are getting rid of the containing <pre> tag
+			// which would have handled the decode for us.
+			var decoded = WebUtility.HtmlDecode(
+				$"\n```{language}"
+				+ (language is "csharp" ? " title=\"C#\"" : string.Empty)
+				+ $"\n{match.Groups[2].Value}\n```\n");
+
+			sb.Replace(guid, decoded);
 		}
 
 		sb.Replace("%60", "`");
