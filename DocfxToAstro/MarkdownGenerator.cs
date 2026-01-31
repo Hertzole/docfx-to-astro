@@ -518,6 +518,12 @@ internal sealed partial class MarkdownGenerator
 		else
 			sb.AppendLine("false");
 
+		if (!string.IsNullOrWhiteSpace(root.OpenGraphDescription))
+		{
+			sb.Append("description: ");
+			sb.AppendLine(root.OpenGraphDescription);
+		}
+
 		sb.AppendLine("---");
 	}
 

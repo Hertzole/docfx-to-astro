@@ -9,10 +9,19 @@ using DocfxToAstro.Models.Yaml;
 
 namespace DocfxToAstro;
 
+public enum FormatKind
+{
+	Markdown,
+	OpenGraphDescription
+}
+
 internal static partial class Formatters
 {
 	[GeneratedRegex("<xref href=\"(.*?)\"\\s?(?:data-throw-if-not-resolved=\".*?\")?><\\/xref>", RegexOptions.CultureInvariant)]
 	private static partial Regex SummaryReferenceRegex();
+
+	[GeneratedRegex("""<a href="(?:.*?)"\s?>(.*?)</a>""", RegexOptions.CultureInvariant)]
+	private static partial Regex LinkRegex();
 
 	[GeneratedRegex("<code\\s?(?:class=\".*?\")?>(.*?)</code>", RegexOptions.CultureInvariant)]
 	private static partial Regex CodeOpenTagRegex();
@@ -26,10 +35,17 @@ internal static partial class Formatters
 	[GeneratedRegex(@"\S(\s{0,1}\n\s*)\S", RegexOptions.CultureInvariant)]
 	private static partial Regex InvalidNewLineRegex();
 
+	[GeneratedRegex(@"<br(?:\s*?)/>", RegexOptions.CultureInvariant)]
+	private static partial Regex BrRegex();
+
 	[GeneratedRegex(@"(.*?)(?:\.html)?#(.*)_{1}(.*)", RegexOptions.CultureInvariant)]
 	private static partial Regex HeaderLinkRegex();
 
-	public static string FormatSummary(string? summary, ReferenceCollection references)
+	public static string FormatSummary(
+		string? summary,
+		ReferenceCollection references,
+		FormatKind format = FormatKind.Markdown
+	)
 	{
 		if (string.IsNullOrWhiteSpace(summary))
 		{
@@ -46,14 +62,12 @@ internal static partial class Formatters
 			// (without being wrapped in <pre></pre>) make the characters
 			// be interpreted literally.
 			var decoded = WebUtility.HtmlDecode($"`{match.Groups[1].Value}`");
-
-			summary = summary.Replace(match.Groups[0].Value, decoded);
 			sb.Replace(match.Groups[0].ValueSpan, decoded);
 		}
 
 		(Match, string)[] multilineMatches = [..
 			CodeOpenTagMultilineRegex()
-				.Matches(summary)
+				.Matches(sb.ToString())
 				.Select(x => (x, Guid.NewGuid().ToString()))
 		];
 
@@ -62,37 +76,64 @@ internal static partial class Formatters
 		// After it, we replace the guid with what we want.
 		foreach ((Match match, string guid) in multilineMatches)
 		{
-			summary = summary.Replace(match.Groups[0].Value, guid);
+			// Except if we are formatting for OpenGraphDescription,
+			// we just get rid of multiline code blocks.
+			if (format is FormatKind.OpenGraphDescription)
+			{
+				sb.Replace(match.Groups[0].ValueSpan, string.Empty);
+				continue;
+			}
+
 			sb.Replace(match.Groups[0].ValueSpan, guid);
 		}
 
-		MatchCollection newLineMatches = InvalidNewLineRegex().Matches(summary);
+		if (format is FormatKind.OpenGraphDescription)
+		{
+			MatchCollection brMatches = BrRegex().Matches(sb.ToString());
+			foreach (Match match in brMatches)
+			{
+				// We get rid of <br />.
+				sb.Replace(match.Groups[0].ValueSpan, " ");
+			}
+
+			MatchCollection linkMatches = LinkRegex().Matches(sb.ToString());
+			foreach (Match match in linkMatches)
+			{
+				// We get rid of the link and keep the text.
+				sb.Replace(match.Groups[0].ValueSpan, match.Groups[1].ValueSpan);
+			}
+		}
+
+		MatchCollection newLineMatches = InvalidNewLineRegex().Matches(sb.ToString());
 		foreach (Match match in newLineMatches)
 		{
 			sb.Replace(match.Groups[1].ValueSpan, " ");
 		}
 
-		foreach ((Match match, string guid) in multilineMatches)
+		if (format is not FormatKind.OpenGraphDescription)
 		{
+			foreach ((Match match, string guid) in multilineMatches)
+			{
 #if NET9_0_OR_GREATER
-			ReadOnlySpan<char> language = match.Groups[1].ValueSpan;
-			if (language.StartsWith("lang-"))
-				language = language[5..];
+				ReadOnlySpan<char> language = match.Groups[1].ValueSpan;
+				if (language.StartsWith("lang-"))
+					language = language[5..];
 #else
-			ReadOnlySpan<char> languageSpan = match.Groups[1].ValueSpan;
-			if (languageSpan.StartsWith("lang-"))
-				languageSpan = languageSpan[5..];
+				ReadOnlySpan<char> languageSpan = match.Groups[1].ValueSpan;
+				if (languageSpan.StartsWith("lang-"))
+					languageSpan = languageSpan[5..];
 
-			string language = languageSpan.ToString();
+				string language = languageSpan.ToString();
 #endif
-			// We are getting rid of the containing <pre> tag
-			// which would have handled the decode for us.
-			var decoded = WebUtility.HtmlDecode(
-				$"\n```{language}"
-				+ (language is "csharp" ? " title=\"C#\"" : string.Empty)
-				+ $"\n{match.Groups[2].Value}\n```\n");
+				// We are getting rid of the containing <pre> tag
+				// which would have handled the decode for us.
+				var decoded = WebUtility.HtmlDecode(
+					$"\n```{language}"
+					+ (language is "csharp" ? " title=\"C#\"" : string.Empty)
+					+ $"\n{match.Groups[2].Value}\n```\n");
 
-			sb.Replace(guid, decoded);
+				sb.Replace(guid, decoded);
+			}
 		}
 
 		sb.Replace("%60", "`");
@@ -106,7 +147,10 @@ internal static partial class Formatters
 			}
 
 			string uid = match.Groups[1].Value;
-			if (references.TryGetReferenceWithLink(uid, out Reference reference))
+			if (
+				format is FormatKind.Markdown
+				&& references.TryGetReferenceWithLink(uid, out Reference reference)
+			)
 			{
 				var hrefToUse = reference.Href;
 
@@ -140,7 +184,17 @@ internal static partial class Formatters
 			}
 			else
 			{
-				sb.Replace(match.Groups[0].ValueSpan, $"`{uid}`");
+				switch (format)
+				{
+					case FormatKind.Markdown:
+						// A double backtick prevents a singular backtick in uid from exploding formatting.
+						sb.Replace(match.Groups[0].ValueSpan, $"``{uid}``");
+						break;
+					case FormatKind.OpenGraphDescription:
+						// Here there is no real formatting afaik.
+						sb.Replace(match.Groups[0].ValueSpan, $"`{uid}`");
+						break;
+				}
 			}
 		}
 

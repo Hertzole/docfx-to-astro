@@ -21,6 +21,7 @@ public sealed class TypeDocumentation
 	public ItemType Type { get; }
 	public ItemSource? Source { get; }
 	public string? Summary { get; }
+	public string? OpenGraphDescription { get; }
 	public Link Link { get; }
 	public string? Syntax { get; }
 	public string? Remarks { get; }
@@ -68,6 +69,7 @@ public sealed class TypeDocumentation
 		Type = item.Type;
 		Source = item.Source;
 		Summary = Formatters.FormatSummary(item.Summary, references);
+		OpenGraphDescription = Formatters.FormatSummary(item.Summary, references, FormatKind.OpenGraphDescription);
 		Remarks = Formatters.FormatSummary(item.Remarks, references);
 		if (item.Syntax != null && !string.IsNullOrWhiteSpace(item.Syntax.Content))
 		{
