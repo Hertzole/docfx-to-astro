@@ -1,3 +1,17 @@
+# [1.4.0](https://github.com/Hertzole/docfx-to-astro/compare/v1.3.0...v1.4.0) (2026-01-31)
+
+
+### Bug Fixes
+
+* point edit page to source code or disable it ([ef4faa5](https://github.com/Hertzole/docfx-to-astro/commit/ef4faa544800909be3950e3889ff31b3e991f2c6))
+* remarks heading levels for fields ([7239a53](https://github.com/Hertzole/docfx-to-astro/commit/7239a5363725bc39e1589c806cd9266ad764e0bd))
+* resolve Nullable warnings for Root ([f6969cf](https://github.com/Hertzole/docfx-to-astro/commit/f6969cf41984d4d75169fdcf9fcb217551fddd6b))
+
+
+### Features
+
+* add descriptions to frontmatter ([462db8f](https://github.com/Hertzole/docfx-to-astro/commit/462db8f224091657ccafd66fc55d420c7f2e8ffe))
+
 # [1.3.0](https://github.com/Hertzole/docfx-to-astro/compare/v1.2.0...v1.3.0) (2026-01-28)
 
 
