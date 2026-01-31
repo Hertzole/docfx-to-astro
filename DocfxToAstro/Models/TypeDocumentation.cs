@@ -19,6 +19,7 @@ public sealed class TypeDocumentation
 	public string MarkdownName { get; }
 	public string FullName { get; }
 	public ItemType Type { get; }
+	public ItemSource? Source { get; }
 	public string? Summary { get; }
 	public Link Link { get; }
 	public string? Syntax { get; }
@@ -65,6 +66,7 @@ public sealed class TypeDocumentation
 		MarkdownName = Name.Replace("<", @"\<");
 		FullName = item.FullName!;
 		Type = item.Type;
+		Source = item.Source;
 		Summary = Formatters.FormatSummary(item.Summary, references);
 		Remarks = Formatters.FormatSummary(item.Remarks, references);
 		if (item.Syntax != null && !string.IsNullOrWhiteSpace(item.Syntax.Content))

@@ -6,6 +6,6 @@ namespace DocfxToAstro.Models.Yaml;
 [YamlObject]
 public partial class Root
 {
-	public List<Item> Items { get; set; }
-	public Reference[] References { get; set; }
+	public required List<Item> Items { get; init; }
+	public required Reference[] References { get; init; }
 }

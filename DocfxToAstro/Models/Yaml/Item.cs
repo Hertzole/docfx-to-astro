@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using DocfxToAstro.Helpers;
 using VYaml.Annotations;
 
 namespace DocfxToAstro.Models.Yaml;
@@ -24,6 +26,7 @@ public partial class Item
 	public string[]? Implements { get; private init; }
 	public ExceptionDoc[]? Exceptions { get; private init; }
 	public AttributeDoc[]? Attributes { get; private init; }
+	public ItemSource? Source { get; private init; }
 
 	[YamlIgnore]
 	public ItemType Type
@@ -48,4 +51,27 @@ public partial class Item
 			};
 		}
 	}
+}
+
+[YamlObject]
+public readonly partial struct ItemSource
+{
+	public ItemSourceRemote Remote { get; private init; }
+	public int StartLine { get; private init; }
+
+	public readonly bool TryGetSourceUrl([NotNullWhen(true)] out string? url)
+	{
+		// Note: StartLine + 1 is actually how they do it:
+		// https://github.com/dotnet/docfx/blob/c4447a95/src/Docfx.Dotnet/DotnetApiCatalog.ApiPage.cs#L133
+		url = GitUtility.GetSourceUrl(new(Remote.Repo, Remote.Branch, Remote.Path, StartLine + 1));
+		return url is { };
+	}
+}
+
+[YamlObject]
+public readonly partial struct ItemSourceRemote
+{
+	public string Path { get; private init; }
+	public string Branch { get; private init; }
+	public string Repo { get; private init; }
 }
