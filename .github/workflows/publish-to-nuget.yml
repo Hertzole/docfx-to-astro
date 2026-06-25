@@ -10,38 +10,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v7
 
-    - name: Setup .NET
-      uses: fast-actions/setup-dotnet@v1
-      with:
-        sdk-version: |
-          8.x
-          9.x
-          10.x
+      - name: Setup .NET
+        uses: fast-actions/setup-dotnet@v1
+        with:
+          sdk-version: |
+            8.x
+            9.x
+            10.x
 
-    - name: Build
-      run: dotnet build -c Release
+      - name: Build
+        run: dotnet build -c Release
 
-    - name: Semantic Release
-      id: semantic
-      uses: cycjimmy/semantic-release-action@v6
-      with:
-        extra_plugins: |
-          @semantic-release/exec
-          @semantic-release/changelog
-          @semantic-release/git
-        branch: master
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Semantic Release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v6
+        with:
+          extra_plugins: |
+            @semantic-release/exec
+            @semantic-release/changelog
+            @semantic-release/git
+          branch: master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Pack .NET Tool
-      if: steps.semantic.outputs.new_release_published == 'true'
-      run: |
-        dotnet clean
-        dotnet pack DocfxToAstro/DocfxToAstro.csproj -c Release -o tool_output -p:AssemblyVersion=${{ steps.semantic.outputs.new_release_version }} -p:Version=${{ steps.semantic.outputs.new_release_version }}
+      - name: Pack .NET Tool
+        if: steps.semantic.outputs.new_release_published == 'true'
+        run: |
+          dotnet clean
+          dotnet pack DocfxToAstro/DocfxToAstro.csproj -c Release -o tool_output -p:AssemblyVersion=${{ steps.semantic.outputs.new_release_version }} -p:Version=${{ steps.semantic.outputs.new_release_version }}
 
-    - name: Publish to NuGet
-      if: steps.semantic.outputs.new_release_published == 'true'
-      run: dotnet nuget push tool_output/*.nupkg --skip-duplicate --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+      - name: Publish to NuGet
+        if: steps.semantic.outputs.new_release_published == 'true'
+        run: dotnet nuget push tool_output/*.nupkg --skip-duplicate --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
