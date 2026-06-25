@@ -137,6 +137,7 @@ internal static partial class Formatters
 		}
 
 		sb.Replace("%60", "`");
+			sb.Replace("`", string.Empty);
 
 		MatchCollection matches = SummaryReferenceRegex().Matches(sb.ToString());
 		foreach (Match match in matches)
@@ -192,7 +193,7 @@ internal static partial class Formatters
 						break;
 					case FormatKind.OpenGraphDescription:
 						// Here there is no real formatting afaik.
-						sb.Replace(match.Groups[0].ValueSpan, $"`{uid}`");
+						sb.Replace(match.Groups[0].ValueSpan, $"{uid}");
 						break;
 				}
 			}
