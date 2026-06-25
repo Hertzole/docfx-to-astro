@@ -192,7 +192,7 @@ internal static partial class Formatters
 						sb.Replace(match.Groups[0].ValueSpan, $"``{uid}``");
 						break;
 					case FormatKind.OpenGraphDescription:
-						// Here there is no real formatting afaik.
+						// Here there is no real formatting afaik. 
 						sb.Replace(match.Groups[0].ValueSpan, $"{uid}");
 						break;
 				}
