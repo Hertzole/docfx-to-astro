@@ -4,6 +4,14 @@
 ### Bug Fixes
 
 * backticks in descriptions ([b7cbee6](https://github.com/Hertzole/docfx-to-astro/commit/b7cbee6c0c8194a2ac21e28048f4ff9b7b0b3f56))
+* no nuget release ([e82b9f4](https://github.com/Hertzole/docfx-to-astro/commit/e82b9f4829091f3087099cd5c11a6739744b27db))
+
+## [1.4.1](https://github.com/Hertzole/docfx-to-astro/compare/v1.4.0...v1.4.1) (2026-06-25)
+
+
+### Bug Fixes
+
+* backticks in descriptions ([b7cbee6](https://github.com/Hertzole/docfx-to-astro/commit/b7cbee6c0c8194a2ac21e28048f4ff9b7b0b3f56))
 
 # [1.4.0](https://github.com/Hertzole/docfx-to-astro/compare/v1.3.0...v1.4.0) (2026-01-31)
 
